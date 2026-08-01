@@ -1,26 +1,338 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------------
+   Tokens — le chrome du dashboard reste neutre et sans marque.
+   Seul --accent change : il est injecté depuis le site actif (AccentProvider).
+--------------------------------------------------------------------------- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Aligne les contrôles natifs (dates, scrollbars) sur le thème. */
+  color-scheme: light;
+
+  --bg: #fbfbfb;
+  --surface: #ffffff;
+  --surface-2: #f4f4f5;
+  --surface-3: #ededef;
+  --border: #e7e7e9;
+  --border-strong: #d6d6da;
+  --text: #17171a;
+  --muted: #6b6b72;
+
+  /* Remplacé à chaud par le site actif */
+  --accent: #52525b;
+  --accent-contrast: #ffffff;
+  --accent-soft: color-mix(in oklab, var(--accent) 10%, transparent);
+  --accent-softer: color-mix(in oklab, var(--accent) 6%, transparent);
+
+  --success: #16794a;
+  --warning: #a3620a;
+  --danger: #b42318;
+  --info: #1f5fbf;
+
+  --shadow-xs: 0 1px 2px 0 rgb(16 16 20 / 0.04);
+  --shadow-sm: 0 1px 2px 0 rgb(16 16 20 / 0.05), 0 1px 6px -1px rgb(16 16 20 / 0.04);
+  --shadow-md: 0 4px 16px -4px rgb(16 16 20 / 0.1), 0 2px 6px -2px rgb(16 16 20 / 0.06);
+  --shadow-lg: 0 16px 48px -12px rgb(16 16 20 / 0.18);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --bg: #0e0e10;
+  --surface: #17171a;
+  --surface-2: #1e1e22;
+  --surface-3: #26262b;
+  --border: #2a2a30;
+  --border-strong: #3a3a42;
+  --text: #f2f2f3;
+  --muted: #9a9aa4;
+
+  --accent-soft: color-mix(in oklab, var(--accent) 22%, transparent);
+  --accent-softer: color-mix(in oklab, var(--accent) 12%, transparent);
+
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #fb7185;
+  --info: #7aa7ff;
+
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4), 0 1px 6px -1px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 16px -4px rgb(0 0 0 / 0.5), 0 2px 6px -2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 16px 48px -12px rgb(0 0 0 / 0.6);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-contrast: var(--accent-contrast);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-softer: var(--accent-softer);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-geist), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  *,
+  ::after,
+  ::before {
+    border-color: var(--border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    /* Aucun débordement horizontal, à aucune largeur. */
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.015em;
+  }
+
+  /* Focus clavier toujours visible, teinté par le site actif. */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: var(--accent-soft);
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: var(--border-strong);
+    border-radius: 8px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* Barres d'outils qui défilent : l'affordance vient du contenu coupé. */
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Micro-interactions discrètes uniquement. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Éditeur Tiptap
+--------------------------------------------------------------------------- */
+.tiptap {
+  outline: none;
+  min-height: 320px;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+.tiptap > * + * {
+  margin-top: 0.85em;
+}
+.tiptap h1 {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-top: 1.4em;
+}
+.tiptap h2 {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  margin-top: 1.3em;
+}
+.tiptap h3 {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 1.2em;
+}
+.tiptap ul,
+.tiptap ol {
+  padding-left: 1.25rem;
+}
+.tiptap ul {
+  list-style: disc;
+}
+.tiptap ol {
+  list-style: decimal;
+}
+.tiptap li::marker {
+  color: var(--muted);
+}
+.tiptap li p {
+  margin: 0;
+}
+.tiptap blockquote {
+  border-left: 2px solid var(--accent);
+  padding-left: 1rem;
+  color: var(--muted);
+}
+.tiptap a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.tiptap code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+.tiptap pre {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+}
+.tiptap pre code {
+  background: none;
+  border: none;
+  padding: 0;
+}
+.tiptap img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+.tiptap hr {
+  border: none;
+  border-top: 1px solid var(--border);
+}
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Rendu d'article (modale d'aperçu) — mêmes règles, en lecture seule. */
+.article-render {
+  font-size: 0.95rem;
+  line-height: 1.75;
+}
+.article-render > * + * {
+  margin-top: 0.9em;
+}
+.article-render h1,
+.article-render h2,
+.article-render h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  margin-top: 1.4em;
+}
+.article-render h1 {
+  font-size: 1.5rem;
+}
+.article-render h2 {
+  font-size: 1.25rem;
+}
+.article-render h3 {
+  font-size: 1.05rem;
+}
+.article-render ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+.article-render ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+.article-render blockquote {
+  border-left: 2px solid var(--accent);
+  padding-left: 1rem;
+  color: var(--muted);
+}
+.article-render a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.article-render img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+}
+.article-render pre {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+}
+.article-render code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
 }
