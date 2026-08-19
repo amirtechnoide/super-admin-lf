@@ -5,9 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PenSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useActiveSite, useAppStore } from "@/lib/store/app-store";
-import { Button } from "@/components/ui/button";
+import { useActiveCompany } from "./company-switcher";
 import { isActivePath, NAV_SECTIONS } from "./nav-items";
+import { Button } from "@/components/ui/button";
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -32,7 +32,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                     className={cn(
                       "flex items-center gap-2.5 rounded-lg px-2.5 py-2 max-md:py-3 text-[13px] font-medium transition-colors duration-150",
                       active
-                        ? // La section active prend la couleur du site actif.
+                        ? // La section active prend la couleur de l'entreprise.
                           "bg-accent-soft text-accent"
                         : "text-muted hover:bg-surface-2 hover:text-text"
                     )}
@@ -44,6 +44,14 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                       )}
                     />
                     <span className="truncate">{item.label}</span>
+                    {item.planned ? (
+                      <span
+                        className="ml-auto shrink-0 rounded border border-border px-1 py-0.5 text-[9px] font-medium uppercase tracking-wide text-muted"
+                        title="Aucun endpoint côté API pour l'instant"
+                      >
+                        à venir
+                      </span>
+                    ) : null}
                   </Link>
                 </li>
               );
@@ -56,8 +64,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 function SidebarFooter() {
-  const activeSite = useActiveSite();
-  const activeSiteId = useAppStore((s) => s.activeSiteId);
+  const activeCompany = useActiveCompany();
 
   return (
     <div className="border-t border-border p-3">
@@ -68,15 +75,13 @@ function SidebarFooter() {
         </Link>
       </Button>
       <p className="mt-2.5 px-1 text-[11px] leading-relaxed text-muted">
-        {activeSiteId ? (
+        {activeCompany ? (
           <>
             Écriture sur{" "}
-            <span className="font-medium text-text">
-              {activeSite?.name ?? "…"}
-            </span>
+            <span className="font-medium text-text">{activeCompany.name}</span>
           </>
         ) : (
-          "Choisissez un site pour écrire"
+          "L'entreprise sera choisie dans l'éditeur"
         )}
       </p>
     </div>
@@ -86,15 +91,15 @@ function SidebarFooter() {
 function Wordmark() {
   return (
     <div className="flex h-14 shrink-0 items-center gap-2.5 px-4">
-      {/* Chrome neutre et sans marque : un simple repère, pas un logo client. */}
+      {/* Chrome neutre : un repère produit, pas un logo client. */}
       <span
         aria-hidden
         className="flex size-6 items-center justify-center rounded-md bg-text text-[10px] font-semibold text-bg"
       >
-        LF
+        SG
       </span>
       <span className="font-display text-[13px] font-semibold tracking-tight">
-        Studio Blog
+        Sogafric Blog
       </span>
     </div>
   );
@@ -112,7 +117,11 @@ export function Sidebar() {
 }
 
 /** Contenu de la sidebar réutilisé dans le drawer mobile. */
-export function SidebarDrawerContent({ onNavigate }: { onNavigate: () => void }) {
+export function SidebarDrawerContent({
+  onNavigate,
+}: {
+  onNavigate: () => void;
+}) {
   return (
     <>
       <Wordmark />

@@ -1,17 +1,37 @@
 "use client";
 
 import { PostEditor } from "@/components/editor/post-editor";
-import { useAppStore } from "@/lib/store/app-store";
+import { useCompanies } from "@/lib/queries/use-companies";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
+import { QueryError } from "@/components/ui/query-state";
 
 export default function NewPostPage() {
-  const sitesLoaded = useAppStore((s) => s.sitesLoaded);
+  // L'éditeur a besoin de la liste des entreprises pour préremplir la cible.
+  const companies = useCompanies();
 
-  // On attend la liste des sites pour préremplir le site de destination.
-  if (!sitesLoaded) {
+  if (companies.isError) {
+    return (
+      <Card>
+        <QueryError
+          error={companies.error}
+          onRetry={() => companies.refetch()}
+        />
+      </Card>
+    );
+  }
+
+  if (companies.isPending) {
     return (
       <div className="space-y-4">
-        <div className="h-8 w-48 animate-pulse rounded-md bg-surface-2" />
-        <div className="h-[420px] w-full animate-pulse rounded-xl bg-surface-2" />
+        <Skeleton className="h-8 w-48" />
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="space-y-4">
+            <Skeleton className="h-[120px] w-full rounded-xl" />
+            <Skeleton className="h-[420px] w-full rounded-xl" />
+          </div>
+          <Skeleton className="h-[320px] w-full rounded-xl" />
+        </div>
       </div>
     );
   }

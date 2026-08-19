@@ -1,14 +1,7 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
-import {
-  COMMENT_STATUS_LABELS,
-  POST_STATUS_LABELS,
-  SITE_STATUS_LABELS,
-  type CommentStatus,
-  type PostStatus,
-  type Site,
-} from "@/lib/types";
+import { POST_STATUS_LABELS, type PostStatus } from "@/lib/api/schemas";
 
 const badgeVariants = cva(
   "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[11px] font-medium leading-5 whitespace-nowrap border",
@@ -37,16 +30,7 @@ export function Badge({ className, tone, ...props }: BadgeProps) {
   return <span className={cn(badgeVariants({ tone }), className)} {...props} />;
 }
 
-/* Badges de statut réutilisables ------------------------------------------- */
-
-const POST_TONES: Record<PostStatus, VariantProps<typeof badgeVariants>["tone"]> =
-  {
-    published: "accent",
-    draft: "neutral",
-    scheduled: "info",
-    archived: "warning",
-  };
-
+/** Badge de statut d'article — l'API n'expose que DRAFT et PUBLISHED. */
 export function PostStatusBadge({
   status,
   className,
@@ -55,41 +39,18 @@ export function PostStatusBadge({
   className?: string;
 }) {
   return (
-    <Badge tone={POST_TONES[status]} className={className}>
+    <Badge
+      tone={status === "PUBLISHED" ? "accent" : "neutral"}
+      className={className}
+    >
       <span
         aria-hidden
         className={cn(
           "size-1.5 rounded-full",
-          status === "published" && "bg-accent",
-          status === "draft" && "bg-muted",
-          status === "scheduled" && "bg-info",
-          status === "archived" && "bg-warning"
+          status === "PUBLISHED" ? "bg-accent" : "bg-muted"
         )}
       />
       {POST_STATUS_LABELS[status]}
-    </Badge>
-  );
-}
-
-const COMMENT_TONES: Record<
-  CommentStatus,
-  VariantProps<typeof badgeVariants>["tone"]
-> = {
-  pending: "warning",
-  approved: "success",
-  spam: "danger",
-};
-
-export function CommentStatusBadge({ status }: { status: CommentStatus }) {
-  return (
-    <Badge tone={COMMENT_TONES[status]}>{COMMENT_STATUS_LABELS[status]}</Badge>
-  );
-}
-
-export function SiteStatusBadge({ status }: { status: Site["status"] }) {
-  return (
-    <Badge tone={status === "active" ? "success" : "warning"}>
-      {SITE_STATUS_LABELS[status]}
     </Badge>
   );
 }

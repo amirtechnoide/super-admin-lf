@@ -5,21 +5,20 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Marques diacritiques combinantes (U+0300–U+036F), construites depuis une
-// chaîne échappée pour rester lisibles dans le fichier source.
-const DIACRITICS = new RegExp("[\\u0300-\\u036f]", "g");
+/**
+ * Le backend sérialise des `LocalDateTime` **sans fuseau**
+ * (ex. `2026-08-12T17:33:12.411428`). JavaScript interprète alors la valeur
+ * dans le fuseau du navigateur : un admin hors du Cameroun verrait toutes les
+ * dates décalées. On force donc le fuseau du serveur, qui n'a pas d'heure d'été.
+ *
+ * À retirer le jour où l'API renverra un instant complet (suffixe `Z` ou
+ * décalage explicite) : la fonction le détecte déjà et le respecte.
+ */
+const SERVER_UTC_OFFSET = "+01:00"; // Africa/Douala, sans changement d'heure
 
-/** Slug FR-friendly : accents retirés, espaces → tirets. */
-export function slugify(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(DIACRITICS, "")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
+export function parseApiDate(value: string): Date {
+  const hasTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/.test(value);
+  return new Date(hasTimezone ? value : `${value}${SERVER_UTC_OFFSET}`);
 }
 
 const DATE_FMT = new Intl.DateTimeFormat("fr-FR", {
@@ -28,39 +27,14 @@ const DATE_FMT = new Intl.DateTimeFormat("fr-FR", {
   year: "numeric",
 });
 
-const DATETIME_FMT = new Intl.DateTimeFormat("fr-FR", {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-});
-
 export function formatDate(iso?: string): string {
   if (!iso) return "—";
-  return DATE_FMT.format(new Date(iso));
-}
-
-const DATE_SHORT_FMT = new Intl.DateTimeFormat("fr-FR", {
-  day: "2-digit",
-  month: "2-digit",
-  year: "2-digit",
-});
-
-/** Format compact « 30/07/26 » — pour les grilles denses. */
-export function formatDateShort(iso?: string): string {
-  if (!iso) return "—";
-  return DATE_SHORT_FMT.format(new Date(iso));
-}
-
-export function formatDateTime(iso?: string): string {
-  if (!iso) return "—";
-  return DATETIME_FMT.format(new Date(iso));
+  return DATE_FMT.format(parseApiDate(iso));
 }
 
 /** « il y a 3 jours » — sans dépendance de locale supplémentaire. */
 export function formatRelative(iso: string, now: Date = new Date()): string {
-  const diff = now.getTime() - new Date(iso).getTime();
+  const diff = now.getTime() - parseApiDate(iso).getTime();
   const minutes = Math.round(diff / 60000);
   if (minutes < 1) return "à l'instant";
   if (minutes < 60) return `il y a ${minutes} min`;
@@ -81,21 +55,6 @@ export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} o`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} Ko`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
-}
-
-/** Valeur d'entrée pour <input type="datetime-local"> depuis un ISO. */
-export function toDatetimeLocal(iso?: string): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
-    d.getHours()
-  )}:${pad(d.getMinutes())}`;
-}
-
-export function fromDatetimeLocal(value: string): string | undefined {
-  if (!value) return undefined;
-  return new Date(value).toISOString();
 }
 
 /** Temps de lecture approximatif, en minutes (200 mots/min). */

@@ -2,104 +2,133 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { signIn } from "@/lib/data";
-import { useAppStore } from "@/lib/store/app-store";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Field } from "@/components/ui/label";
+import { CheckCircle2 } from "lucide-react";
+import { useAuthStore } from "@/lib/auth/auth-store";
+import { LoginForm } from "@/components/auth/login-form";
+import { ResetPasswordDialog } from "@/components/auth/reset-password-dialog";
+
+/** Accent propre à l'écran de connexion : aucune entreprise n'est encore active. */
+const BRAND_ACCENT = "#2F5BEA";
+
+const HIGHLIGHTS = [
+  "Un seul dashboard pour tous les blogs clients",
+  "Rédaction, publication et brouillons en un clic",
+  "Chiffres consolidés, mis à jour en direct",
+];
 
 export default function LoginPage() {
   const router = useRouter();
-  const setAdmin = useAppStore((s) => s.setAdmin);
-  const [email, setEmail] = React.useState("amir@lfc.studio");
-  const [password, setPassword] = React.useState("");
-  const [pending, setPending] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const status = useAuthStore((s) => s.status);
+  const [resetOpen, setResetOpen] = React.useState(false);
 
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    if (!email.trim()) {
-      setError("Saisissez votre adresse e-mail.");
-      return;
-    }
-    setError(null);
-    setPending(true);
-    // UI seule : aucune authentification réelle n'est effectuée.
-    const admin = await signIn(email);
-    setAdmin(admin);
-    router.push("/");
-  }
+  // Un admin déjà connecté n'a rien à faire sur cet écran.
+  React.useEffect(() => {
+    if (status === "authenticated") router.replace("/");
+  }, [status, router]);
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center px-4 py-10">
-      <div className="w-full max-w-[380px]">
-        <div className="mb-7 flex items-center gap-2.5">
+    <div
+      className="grid min-h-dvh lg:grid-cols-[1fr_minmax(0,520px)]"
+      style={
+        {
+          "--accent": BRAND_ACCENT,
+          "--accent-contrast": "#ffffff",
+        } as React.CSSProperties
+      }
+    >
+      {/* Panneau de marque — masqué sous lg pour laisser la place au formulaire. */}
+      <aside className="relative hidden overflow-hidden bg-[#0E1220] p-10 text-white lg:flex lg:flex-col lg:justify-between">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage:
+              "radial-gradient(60rem 40rem at 15% 10%, rgba(47,91,234,0.35), transparent 60%), radial-gradient(45rem 35rem at 85% 85%, rgba(14,154,167,0.28), transparent 60%)",
+          }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.07]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)",
+            backgroundSize: "44px 44px",
+            maskImage:
+              "radial-gradient(70% 60% at 50% 40%, #000 40%, transparent 100%)",
+          }}
+        />
+
+        <div className="relative flex items-center gap-2.5">
           <span
             aria-hidden
-            className="flex size-7 items-center justify-center rounded-md bg-text text-[11px] font-semibold text-bg"
+            className="flex size-7 items-center justify-center rounded-md bg-white text-[11px] font-semibold text-[#0E1220]"
           >
-            LF
+            SG
           </span>
           <span className="font-display text-sm font-semibold tracking-tight">
-            Studio Blog
+            Sogafric Blog
           </span>
         </div>
 
-        <div className="rounded-xl border border-border bg-surface p-5 shadow-sm sm:p-6">
-          <div className="mb-5 space-y-1">
-            <h1 className="text-lg font-semibold tracking-tight">Connexion</h1>
-            <p className="text-[13px] text-muted">
-              Accédez à l&apos;administration des blogs de vos cinq sites.
+        <div className="relative max-w-md">
+          <h2 className="animate-rise font-display text-[34px] font-semibold leading-[1.15] tracking-tight">
+            Vos blogs clients,
+            <br />
+            pilotés depuis un seul écran.
+          </h2>
+          <ul className="mt-7 space-y-3">
+            {HIGHLIGHTS.map((item, index) => (
+              <li
+                key={item}
+                className="animate-rise flex items-start gap-2.5 text-[13px] leading-relaxed text-white/70"
+                style={{ animationDelay: `${80 + index * 70}ms` }}
+              >
+                <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-white/50" />
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <p className="relative font-mono text-[11px] text-white/35">
+          Administration réservée aux équipes Sogafric
+        </p>
+      </aside>
+
+      {/* Colonne formulaire */}
+      <main className="flex items-center justify-center px-5 py-10 sm:px-8">
+        <div className="w-full max-w-[400px]">
+          <div className="mb-8 flex items-center gap-2.5 lg:hidden">
+            <span
+              aria-hidden
+              className="flex size-7 items-center justify-center rounded-md bg-text text-[11px] font-semibold text-bg"
+            >
+              SG
+            </span>
+            <span className="font-display text-sm font-semibold tracking-tight">
+              Sogafric Blog
+            </span>
+          </div>
+
+          <div className="animate-rise mb-7 space-y-1.5">
+            <h1 className="font-display text-2xl font-semibold tracking-tight">
+              Content de vous revoir
+            </h1>
+            <p className="text-[13px] leading-relaxed text-muted">
+              Connectez-vous pour gérer les articles de vos entreprises.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-            <Field label="Adresse e-mail" htmlFor="email" error={error ?? undefined}>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="vous@exemple.com"
-              />
-            </Field>
-
-            <Field label="Mot de passe" htmlFor="password">
-              <Input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="••••••••"
-              />
-            </Field>
-
-            <Button type="submit" size="lg" className="w-full" disabled={pending}>
-              {pending ? "Connexion…" : "Se connecter"}
-            </Button>
-          </form>
-
-          <button
-            type="button"
-            onClick={() =>
-              toast("Lien de réinitialisation envoyé", {
-                description: `Consultez la boîte de réception de ${email || "votre adresse"}.`,
-              })
-            }
-            className="mt-4 text-[13px] text-muted underline-offset-4 transition-colors hover:text-text hover:underline"
+          <div
+            className="animate-rise"
+            style={{ animationDelay: "60ms" }}
           >
-            Mot de passe oublié
-          </button>
+            <LoginForm onForgotPassword={() => setResetOpen(true)} />
+          </div>
         </div>
+      </main>
 
-        <p className="mt-5 text-center text-xs leading-relaxed text-muted">
-          Interface de démonstration — les données sont simulées et aucune
-          authentification n&apos;est effectuée.
-        </p>
-      </div>
+      <ResetPasswordDialog open={resetOpen} onOpenChange={setResetOpen} />
     </div>
   );
 }

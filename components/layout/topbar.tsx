@@ -4,7 +4,7 @@ import * as React from "react";
 import { Menu } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { SidebarDrawerContent } from "./sidebar";
-import { SiteSwitcher } from "./site-switcher";
+import { CompanySwitcher } from "./company-switcher";
 import { GlobalSearch } from "./global-search";
 import { ThemeToggle } from "./theme-toggle";
 import { UserMenu } from "./user-menu";
@@ -25,7 +25,7 @@ export function Topbar() {
           <Menu className="size-5" />
         </button>
 
-        <SiteSwitcher />
+        <CompanySwitcher />
 
         <div className="ml-auto flex items-center gap-0.5 sm:gap-1">
           <GlobalSearch />

@@ -18,8 +18,7 @@ export function PreviewDialog({
   content,
   coverImage,
   readingTime,
-  authorName,
-  siteName,
+  companyName,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -28,8 +27,7 @@ export function PreviewDialog({
   content: string;
   coverImage?: string;
   readingTime: number;
-  authorName: string;
-  siteName: string;
+  companyName: string;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -37,18 +35,19 @@ export function PreviewDialog({
         <DialogHeader>
           <DialogTitle>Aperçu de l&apos;article</DialogTitle>
           <p className="text-[13px] text-muted">
-            Rendu approximatif sur {siteName}.
+            Rendu approximatif sur le blog {companyName}.
           </p>
         </DialogHeader>
 
         <DialogBody>
           <article className="mx-auto max-w-[38rem]">
             {coverImage ? (
-              <div className="mb-5 flex aspect-[16/7] w-full items-center justify-center rounded-xl border border-border bg-surface-2">
-                <span className="px-4 text-center font-mono text-[11px] text-muted">
-                  {coverImage}
-                </span>
-              </div>
+              // eslint-disable-next-line @next/next/no-img-element -- domaine R2 non declare
+              <img
+                src={coverImage}
+                alt=""
+                className="mb-5 aspect-[16/7] w-full rounded-xl border border-border bg-surface-2 object-cover"
+              />
             ) : null}
 
             <p className="font-mono text-[11px] uppercase tracking-wider text-muted">
@@ -66,9 +65,6 @@ export function PreviewDialog({
               </p>
             ) : null}
 
-            <p className="mt-4 border-t border-border pt-4 text-[13px] text-muted">
-              Par <span className="font-medium text-text">{authorName}</span>
-            </p>
 
             <div
               className="article-render mt-5"

@@ -3,12 +3,12 @@
 import { use } from "react";
 import Link from "next/link";
 import { FileQuestion } from "lucide-react";
-import { getPost } from "@/lib/data";
-import { useAsync } from "@/lib/hooks/use-async";
+import { usePost } from "@/lib/queries/use-posts";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryError } from "@/components/ui/query-state";
 import { PostEditor } from "@/components/editor/post-editor";
 
 export default function EditPostPage({
@@ -18,30 +18,16 @@ export default function EditPostPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const post = useAsync(() => getPost(id), [id]);
+  const postId = Number(id);
+  const post = usePost(Number.isFinite(postId) ? postId : null);
 
-  if (post.loading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-48" />
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="space-y-4">
-            <Skeleton className="h-[168px] w-full rounded-xl" />
-            <Skeleton className="h-[420px] w-full rounded-xl" />
-          </div>
-          <Skeleton className="h-[320px] w-full rounded-xl" />
-        </div>
-      </div>
-    );
-  }
-
-  if (!post.data) {
+  if (!Number.isFinite(postId)) {
     return (
       <Card>
         <EmptyState
           icon={FileQuestion}
-          title="Cet article n'existe plus"
-          description="Il a peut-être été supprimé depuis un autre écran."
+          title="Identifiant d'article invalide"
+          description="L'adresse ne correspond à aucun article."
           action={
             <Button asChild>
               <Link href="/posts">Revenir aux articles</Link>
@@ -52,5 +38,29 @@ export default function EditPostPage({
     );
   }
 
-  return <PostEditor post={post.data} />;
+  if (post.isError) {
+    return (
+      <Card>
+        <QueryError error={post.error} onRetry={() => post.refetch()} />
+      </Card>
+    );
+  }
+
+  if (post.isPending) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-8 w-48" />
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="space-y-4">
+            <Skeleton className="h-[120px] w-full rounded-xl" />
+            <Skeleton className="h-[420px] w-full rounded-xl" />
+          </div>
+          <Skeleton className="h-[320px] w-full rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+
+  // `key` : repartir d'un état de formulaire propre quand on change d'article.
+  return <PostEditor key={post.data.id} post={post.data} />;
 }

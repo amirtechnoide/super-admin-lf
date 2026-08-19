@@ -5,9 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
-  Archive,
+  ChevronLeft,
+  ChevronRight,
   FileText,
-  Filter,
   MoreHorizontal,
   PenSquare,
   Search,
@@ -16,27 +16,24 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import {
-  bulkDeletePosts,
-  bulkUpdatePostStatus,
-  deletePost,
-  getCategories,
-  getPosts,
-} from "@/lib/data";
-import { useAsync, useDebounced } from "@/lib/hooks/use-async";
+import { usePosts, useDeletePost, useUpdatePost } from "@/lib/queries/use-posts";
 import { useAppStore } from "@/lib/store/app-store";
-import type { Post, PostStatus } from "@/lib/types";
-import { POST_STATUS_LABELS } from "@/lib/types";
-import { formatDate, formatNumber } from "@/lib/utils";
+import {
+  POST_STATUS_LABELS,
+  type Post,
+  type PostStatus,
+} from "@/lib/api/schemas";
+import { ApiError } from "@/lib/api/errors";
+import { formatDate, formatRelative } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PostStatusBadge } from "@/components/ui/badge";
-import { UserAvatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { BulkActionBar, DataTable, type Column } from "@/components/ui/data-table";
+import { TableSkeleton } from "@/components/ui/skeleton";
+import { QueryError } from "@/components/ui/query-state";
 import {
   Select,
   SelectContent,
@@ -51,234 +48,97 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SiteDot } from "@/components/layout/site-switcher";
+import {
+  CompanyDot,
+  useActiveCompany,
+} from "@/components/layout/company-switcher";
 
-const STATUS_OPTIONS: (PostStatus | "all")[] = [
-  "all",
-  "published",
-  "draft",
-  "scheduled",
-  "archived",
-];
+const PAGE_SIZE = 10;
 
 export default function PostsPage() {
   const router = useRouter();
-  const activeSiteId = useAppStore((s) => s.activeSiteId);
-  const sites = useAppStore((s) => s.sites);
-  const admin = useAppStore((s) => s.admin);
-  const aggregated = activeSiteId === null;
+  const activeCompanyId = useAppStore((s) => s.activeCompanyId);
+  const activeCompany = useActiveCompany();
+  const aggregated = activeCompanyId === null;
 
+  const [page, setPage] = React.useState(0);
+  const [status, setStatus] = React.useState<PostStatus | "ALL">("ALL");
   const [query, setQuery] = React.useState("");
-  const [status, setStatus] = React.useState<PostStatus | "all">("all");
-  const [categoryId, setCategoryId] = React.useState("all");
-  const [from, setFrom] = React.useState("");
-  const [to, setTo] = React.useState("");
-  const [filtersOpen, setFiltersOpen] = React.useState(false);
-  const [selected, setSelected] = React.useState<string[]>([]);
   const [toDelete, setToDelete] = React.useState<Post | null>(null);
-  const [bulkDeleteOpen, setBulkDeleteOpen] = React.useState(false);
 
-  const debouncedQuery = useDebounced(query, 300);
+  // Changer de périmètre ou de filtre remet la pagination à zéro.
+  const scopeKey = `${activeCompanyId ?? "all"}|${status}`;
+  const [scope, setScope] = React.useState(scopeKey);
+  if (scope !== scopeKey) {
+    setScope(scopeKey);
+    setPage(0);
+  }
 
-  const categories = useAsync(
-    () => getCategories(activeSiteId),
-    [activeSiteId]
+  const posts = usePosts({
+    companyId: activeCompanyId,
+    status: status === "ALL" ? null : status,
+    page,
+    size: PAGE_SIZE,
+    sort: "createdAt,desc",
+  });
+
+  const deletePost = useDeletePost();
+  const updatePost = useUpdatePost();
+
+  // L'API n'expose pas de recherche : on filtre la page chargée, et on le dit.
+  const rows = (posts.data?.content ?? []).filter((post) =>
+    query.trim()
+      ? `${post.title} ${post.excerpt} ${post.slug}`
+          .toLowerCase()
+          .includes(query.trim().toLowerCase())
+      : true
   );
 
-  const posts = useAsync(
-    () =>
-      getPosts({
-        siteId: activeSiteId,
-        status,
-        categoryId: categoryId === "all" ? undefined : categoryId,
-        query: debouncedQuery || undefined,
-        from: from ? new Date(from).toISOString() : undefined,
-        to: to ? new Date(`${to}T23:59:59`).toISOString() : undefined,
-        pageSize: 500,
-      }),
-    [activeSiteId, status, categoryId, debouncedQuery, from, to]
-  );
-
-  // La sélection ne doit pas survivre à un changement de périmètre.
-  const [scope, setScope] = React.useState(activeSiteId);
-  if (scope !== activeSiteId) {
-    setScope(activeSiteId);
-    setSelected([]);
-    setCategoryId("all");
-  }
-
-  const rows = posts.data?.items ?? [];
-  const hasFilters =
-    Boolean(query) || status !== "all" || categoryId !== "all" || from || to;
-
-  function resetFilters() {
-    setQuery("");
-    setStatus("all");
-    setCategoryId("all");
-    setFrom("");
-    setTo("");
-  }
-
-  async function applyBulkStatus(next: PostStatus) {
-    await bulkUpdatePostStatus(selected, next);
-    toast.success(
-      next === "published"
-        ? `${selected.length} article(s) publié(s)`
-        : `${selected.length} article(s) archivé(s)`
-    );
-    setSelected([]);
-    posts.reload();
-  }
-
-  async function confirmBulkDelete() {
-    const count = selected.length;
-    await bulkDeletePosts(selected);
-    toast.success(`${count} article(s) supprimé(s)`);
-    setSelected([]);
-    posts.reload();
+  async function togglePublication(post: Post) {
+    // Le PUT exige un companyId : sans entreprise rattachee, on ne peut pas
+    // republier depuis la liste sans en choisir une dans l'editeur.
+    if (!post.company) {
+      toast.error(
+        "Cet article n'est rattache a aucune entreprise : ouvrez-le pour en choisir une."
+      );
+      return;
+    }
+    const next: PostStatus = post.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED";
+    try {
+      await updatePost.mutateAsync({
+        id: post.id,
+        title: post.title,
+        content: post.content,
+        excerpt: post.excerpt,
+        status: next,
+        companyId: post.company.id,
+        coverImageUrl: post.coverImageUrl ?? undefined,
+      });
+      toast.success(
+        next === "PUBLISHED" ? "Article publié" : "Article repassé en brouillon"
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof ApiError ? error.message : "La mise à jour a échoué."
+      );
+    }
   }
 
   async function confirmDelete() {
     if (!toDelete) return;
-    await deletePost(toDelete.id);
-    toast.success("Article supprimé");
-    setToDelete(null);
-    posts.reload();
+    try {
+      await deletePost.mutateAsync(toDelete.id);
+      toast.success("Article supprimé");
+      setToDelete(null);
+    } catch (error) {
+      toast.error(
+        error instanceof ApiError ? error.message : "La suppression a échoué."
+      );
+    }
   }
 
-  function categoryNames(post: Post) {
-    const names = post.categoryIds
-      .map((id) => categories.data?.find((c) => c.id === id)?.name)
-      .filter(Boolean);
-    return names.length > 0 ? names.join(", ") : "—";
-  }
-
-  const columns: Column<Post>[] = [
-    {
-      key: "title",
-      header: "Article",
-      sortValue: (post) => post.title,
-      // `w-full max-w-0` : la colonne absorbe la place restante et tronque.
-      className: "w-full max-w-0",
-      cell: (post) => (
-        <div className="flex items-start gap-2.5">
-          {aggregated ? (
-            <span className="mt-1.5">
-              <SiteDot
-                color={sites.find((s) => s.id === post.siteId)?.accentColor}
-              />
-            </span>
-          ) : null}
-          <div className="min-w-0">
-            <p className="truncate font-medium text-text">{post.title}</p>
-            <p className="truncate text-xs text-muted">{post.excerpt}</p>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "status",
-      header: "Statut",
-      sortValue: (post) => POST_STATUS_LABELS[post.status],
-      cell: (post) => <PostStatusBadge status={post.status} />,
-    },
-    {
-      key: "category",
-      header: "Catégorie",
-      sortValue: categoryNames,
-      cell: (post) => (
-        <span className="block max-w-[160px] truncate text-[13px] text-muted">
-          {categoryNames(post)}
-        </span>
-      ),
-    },
-    {
-      key: "author",
-      header: "Auteur",
-      cell: () => (
-        <div className="flex items-center gap-2">
-          <UserAvatar name={admin.name} src={admin.avatarUrl} className="size-6" />
-          <span className="whitespace-nowrap text-[13px] text-muted">
-            {admin.name}
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: "date",
-      header: "Date",
-      sortValue: (post) => post.publishedAt ?? post.createdAt,
-      cell: (post) => (
-        <span className="whitespace-nowrap font-mono text-xs text-muted">
-          {formatDate(post.publishedAt ?? post.scheduledAt ?? post.createdAt)}
-        </span>
-      ),
-    },
-    {
-      key: "views",
-      header: "Vues",
-      align: "right",
-      sortValue: (post) => post.views,
-      cell: (post) => (
-        <span className="font-mono text-xs tabular text-muted">
-          {formatNumber(post.views)}
-        </span>
-      ),
-    },
-    {
-      key: "actions",
-      header: <span className="sr-only">Actions</span>,
-      align: "right",
-      cell: (post) => (
-        <div onClick={(event) => event.stopPropagation()}>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" aria-label="Actions">
-                <MoreHorizontal />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onSelect={() => router.push(`/posts/${post.id}/edit`)}
-              >
-                <SquarePen />
-                Modifier
-              </DropdownMenuItem>
-              {post.status !== "published" ? (
-                <DropdownMenuItem
-                  onSelect={async () => {
-                    await bulkUpdatePostStatus([post.id], "published");
-                    toast.success("Article publié");
-                    posts.reload();
-                  }}
-                >
-                  <Send />
-                  Publier
-                </DropdownMenuItem>
-              ) : null}
-              {post.status !== "archived" ? (
-                <DropdownMenuItem
-                  onSelect={async () => {
-                    await bulkUpdatePostStatus([post.id], "archived");
-                    toast.success("Article archivé");
-                    posts.reload();
-                  }}
-                >
-                  <Archive />
-                  Archiver
-                </DropdownMenuItem>
-              ) : null}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem destructive onSelect={() => setToDelete(post)}>
-                <Trash2 />
-                Supprimer
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      ),
-    },
-  ];
+  const totalPages = posts.data?.totalPages ?? 0;
+  const totalElements = posts.data?.totalElements ?? 0;
 
   return (
     <div className="space-y-5">
@@ -286,8 +146,8 @@ export default function PostsPage() {
         title="Articles"
         description={
           aggregated
-            ? "Tous les articles, tous sites confondus."
-            : `Les articles du blog ${sites.find((s) => s.id === activeSiteId)?.name ?? "…"}.`
+            ? "Tous les articles, toutes entreprises confondues."
+            : `Les articles du blog ${activeCompany?.name ?? "…"}.`
         }
         actions={
           <Button asChild>
@@ -300,205 +160,242 @@ export default function PostsPage() {
       />
 
       <Card className="overflow-hidden">
-        {/* Barre de recherche et filtres --------------------------------- */}
-        <div className="space-y-3 border-b border-border p-3 sm:p-4">
-          <div className="flex items-center gap-2">
-            <div className="relative min-w-0 flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-              <Input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Rechercher un article…"
-                className="pl-9"
-                aria-label="Rechercher un article"
-              />
-            </div>
-            <Button
-              variant={filtersOpen ? "secondary" : "outline"}
-              size="icon"
-              className="sm:hidden"
-              onClick={() => setFiltersOpen((open) => !open)}
-              aria-label="Filtres"
-              aria-expanded={filtersOpen}
-            >
-              <Filter />
-            </Button>
+        <div className="flex flex-col gap-2 border-b border-border p-3 sm:flex-row sm:items-center sm:p-4">
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Filtrer cette page…"
+              className="pl-9"
+              aria-label="Filtrer les articles de la page courante"
+            />
           </div>
-
-          {/* Filtres : repliés sous sm, en ligne au-delà. */}
-          <div
-            className={`${filtersOpen ? "grid" : "hidden"} grid-cols-1 gap-2 sm:grid sm:grid-cols-2 lg:grid-cols-4`}
+          <Select
+            value={status}
+            onValueChange={(value) => setStatus(value as PostStatus | "ALL")}
           >
-            <Select
-              value={status}
-              onValueChange={(value) => setStatus(value as PostStatus | "all")}
-            >
-              <SelectTrigger aria-label="Filtrer par statut">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_OPTIONS.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option === "all"
-                      ? "Tous les statuts"
-                      : POST_STATUS_LABELS[option]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={categoryId} onValueChange={setCategoryId}>
-              <SelectTrigger aria-label="Filtrer par catégorie">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les catégories</SelectItem>
-                {(categories.data ?? []).map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Input
-              type="date"
-              value={from}
-              onChange={(event) => setFrom(event.target.value)}
-              aria-label="Date de début"
-            />
-            <Input
-              type="date"
-              value={to}
-              onChange={(event) => setTo(event.target.value)}
-              aria-label="Date de fin"
-            />
-          </div>
-
-          {hasFilters ? (
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs text-muted tabular">
-                {rows.length} résultat{rows.length > 1 ? "s" : ""}
-              </p>
-              <Button variant="ghost" size="sm" onClick={resetFilters}>
-                <X />
-                Réinitialiser
-              </Button>
-            </div>
+            <SelectTrigger className="sm:w-44" aria-label="Filtrer par statut">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Tous les statuts</SelectItem>
+              <SelectItem value="PUBLISHED">
+                {POST_STATUS_LABELS.PUBLISHED}
+              </SelectItem>
+              <SelectItem value="DRAFT">{POST_STATUS_LABELS.DRAFT}</SelectItem>
+            </SelectContent>
+          </Select>
+          {query ? (
+            <Button variant="ghost" size="sm" onClick={() => setQuery("")}>
+              <X />
+              Effacer
+            </Button>
           ) : null}
         </div>
 
-        <BulkActionBar count={selected.length} onClear={() => setSelected([])}>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => applyBulkStatus("published")}
-          >
-            <Send />
-            Publier
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => applyBulkStatus("archived")}
-          >
-            <Archive />
-            Archiver
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setBulkDeleteOpen(true)}
-          >
-            <Trash2 />
-            Supprimer
-          </Button>
-        </BulkActionBar>
+        {posts.isError ? (
+          <QueryError error={posts.error} onRetry={() => posts.refetch()} />
+        ) : posts.isPending ? (
+          <TableSkeleton rows={5} columns={4} />
+        ) : rows.length === 0 ? (
+          <EmptyState
+            icon={query ? Search : FileText}
+            title={
+              query
+                ? "Aucun article ne correspond sur cette page"
+                : "Aucun article pour l'instant"
+            }
+            description={
+              query
+                ? "Le filtre ne porte que sur la page affichée : changez de page ou effacez le filtre."
+                : "Créez le premier article — il apparaîtra immédiatement dans cette liste."
+            }
+            action={
+              query ? (
+                <Button variant="outline" onClick={() => setQuery("")}>
+                  Effacer le filtre
+                </Button>
+              ) : (
+                <Button asChild>
+                  <Link href="/posts/new">
+                    <PenSquare />
+                    Créer le premier article
+                  </Link>
+                </Button>
+              )
+            }
+          />
+        ) : (
+          <>
+            <div className="hidden md:block overflow-x-auto scrollbar-thin">
+              <table
+                className="w-full border-collapse text-sm"
+                style={{ minWidth: 760 }}
+              >
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="px-4 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-muted">
+                      Article
+                    </th>
+                    <th className="px-3 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-muted">
+                      Statut
+                    </th>
+                    <th className="px-3 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-muted">
+                      Entreprise
+                    </th>
+                    <th className="px-3 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-muted">
+                      Créé le
+                    </th>
+                    <th className="px-3 py-2.5 text-right">
+                      <span className="sr-only">Actions</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((post) => (
+                    <tr
+                      key={post.id}
+                      onClick={() => router.push(`/posts/${post.id}/edit`)}
+                      className="cursor-pointer border-b border-border transition-colors last:border-0 hover:bg-surface-2"
+                    >
+                      <td className="w-full max-w-0 px-4 py-3 align-middle">
+                        <p className="truncate font-medium text-text">
+                          {post.title}
+                        </p>
+                        <p className="truncate text-xs text-muted">
+                          {post.excerpt || post.slug}
+                        </p>
+                      </td>
+                      <td className="px-3 py-3 align-middle">
+                        <PostStatusBadge status={post.status} />
+                      </td>
+                      <td className="px-3 py-3 align-middle">
+                        <span className="flex items-center gap-2 whitespace-nowrap text-[13px] text-muted">
+                          <CompanyDot company={post.company} />
+                          {post.company?.name ?? "—"}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-3 align-middle font-mono text-xs text-muted">
+                        {formatDate(post.createdAt)}
+                      </td>
+                      <td
+                        className="px-3 py-3 text-right align-middle"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label={`Actions sur ${post.title}`}
+                            >
+                              <MoreHorizontal />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onSelect={() =>
+                                router.push(`/posts/${post.id}/edit`)
+                              }
+                            >
+                              <SquarePen />
+                              Modifier
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onSelect={() => togglePublication(post)}
+                            >
+                              <Send />
+                              {post.status === "PUBLISHED"
+                                ? "Repasser en brouillon"
+                                : "Publier"}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              destructive
+                              onSelect={() => setToDelete(post)}
+                            >
+                              <Trash2 />
+                              Supprimer
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-        <DataTable
-          rows={rows}
-          columns={columns}
-          getRowId={(post) => post.id}
-          loading={posts.loading}
-          selectable
-          selectedIds={selected}
-          onSelectedChange={setSelected}
-          onRowClick={(post) => router.push(`/posts/${post.id}/edit`)}
-          pageSize={12}
-          minWidth={840}
-          empty={
-            hasFilters ? (
-              <EmptyState
-                icon={Search}
-                title="Aucun article ne correspond"
-                description="Élargissez la recherche ou retirez un filtre pour voir plus de résultats."
-                action={
-                  <Button variant="outline" onClick={resetFilters}>
-                    Réinitialiser les filtres
-                  </Button>
-                }
-              />
-            ) : (
-              <EmptyState
-                icon={FileText}
-                title="Aucun article pour l'instant"
-                description="Créez le premier article de ce site — il apparaîtra immédiatement dans cette liste."
-                action={
-                  <Button asChild>
-                    <Link href="/posts/new">
-                      <PenSquare />
-                      Créer le premier article
-                    </Link>
-                  </Button>
-                }
-              />
-            )
-          }
-          renderCard={(post) => (
-            <Link href={`/posts/${post.id}/edit`} className="block space-y-1.5">
-              <div className="flex items-start justify-between gap-2">
-                <p className="min-w-0 flex-1 text-sm font-medium leading-snug">
-                  {post.title}
-                </p>
-                <PostStatusBadge status={post.status} />
-              </div>
-              <p className="line-clamp-2 text-xs leading-relaxed text-muted">
-                {post.excerpt}
-              </p>
-              <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] text-muted">
-                <span>
-                  {formatDate(
-                    post.publishedAt ?? post.scheduledAt ?? post.createdAt
-                  )}
-                </span>
-                <span aria-hidden>·</span>
-                <span>{formatNumber(post.views)} vues</span>
-                {categoryNames(post) !== "—" ? (
-                  <>
-                    <span aria-hidden>·</span>
-                    <span className="truncate">{categoryNames(post)}</span>
-                  </>
-                ) : null}
-              </p>
-            </Link>
-          )}
-        />
+            <ul className="md:hidden divide-y divide-border">
+              {rows.map((post) => (
+                <li key={post.id}>
+                  <Link
+                    href={`/posts/${post.id}/edit`}
+                    className="block space-y-1.5 px-4 py-3.5 transition-colors hover:bg-surface-2"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="min-w-0 flex-1 text-sm font-medium leading-snug">
+                        {post.title}
+                      </p>
+                      <PostStatusBadge status={post.status} />
+                    </div>
+                    {post.excerpt ? (
+                      <p className="line-clamp-2 text-xs leading-relaxed text-muted">
+                        {post.excerpt}
+                      </p>
+                    ) : null}
+                    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] text-muted">
+                      <span className="inline-flex items-center gap-1.5">
+                        <CompanyDot company={post.company} />
+                        {post.company?.name ?? "—"}
+                      </span>
+                      <span aria-hidden>·</span>
+                      <span>{formatRelative(post.createdAt)}</span>
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        {totalPages > 1 ? (
+          <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-3 sm:px-5">
+            <p className="text-xs text-muted tabular">
+              Page {page + 1} sur {totalPages} · {totalElements} article
+              {totalElements > 1 ? "s" : ""}
+            </p>
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="outline"
+                size="icon-sm"
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0 || posts.isFetching}
+                aria-label="Page précédente"
+              >
+                <ChevronLeft />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon-sm"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={page + 1 >= totalPages || posts.isFetching}
+                aria-label="Page suivante"
+              >
+                <ChevronRight />
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </Card>
 
       <ConfirmDialog
         open={toDelete !== null}
         onOpenChange={(open) => !open && setToDelete(null)}
         title="Supprimer cet article ?"
-        description={`« ${toDelete?.title ?? ""} » sera définitivement retiré, ainsi que ses commentaires. Cette action est irréversible.`}
+        description={`« ${toDelete?.title ?? ""} » sera définitivement retiré du blog. Cette action est irréversible.`}
         onConfirm={confirmDelete}
-      />
-
-      <ConfirmDialog
-        open={bulkDeleteOpen}
-        onOpenChange={setBulkDeleteOpen}
-        title={`Supprimer ${selected.length} article(s) ?`}
-        description="Les articles sélectionnés et leurs commentaires seront définitivement retirés. Cette action est irréversible."
-        onConfirm={confirmBulkDelete}
       />
     </div>
   );

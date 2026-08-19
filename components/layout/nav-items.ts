@@ -1,8 +1,8 @@
 import type { ComponentType } from "react";
 import {
+  Building2,
   FileText,
   FolderTree,
-  Globe,
   Image,
   LayoutDashboard,
   MessageSquare,
@@ -16,6 +16,8 @@ export interface NavItem {
   icon: ComponentType<{ className?: string }>;
   /** Correspondance exacte (sinon on teste le préfixe). */
   exact?: boolean;
+  /** Module sans endpoint côté API — signalé dans la navigation. */
+  planned?: boolean;
 }
 
 export interface NavSection {
@@ -29,16 +31,26 @@ export const NAV_SECTIONS: NavSection[] = [
     label: "Pilotage",
     items: [
       { href: "/", label: "Vue d'ensemble", icon: LayoutDashboard, exact: true },
-      { href: "/sites", label: "Sites", icon: Globe },
+      { href: "/companies", label: "Entreprises", icon: Building2 },
     ],
   },
   {
     label: "Contenu",
     items: [
       { href: "/posts", label: "Articles", icon: FileText },
-      { href: "/categories", label: "Catégories & tags", icon: FolderTree },
-      { href: "/media", label: "Médias", icon: Image },
-      { href: "/comments", label: "Commentaires", icon: MessageSquare },
+      {
+        href: "/categories",
+        label: "Catégories & tags",
+        icon: FolderTree,
+        planned: true,
+      },
+      { href: "/media", label: "Médias", icon: Image, planned: true },
+      {
+        href: "/comments",
+        label: "Commentaires",
+        icon: MessageSquare,
+        planned: true,
+      },
     ],
   },
   {
