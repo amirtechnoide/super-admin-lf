@@ -20,7 +20,13 @@ import {
   type PostStatus,
 } from "@/lib/api/schemas";
 import { ApiError } from "@/lib/api/errors";
-import { cn, estimateReadingTime, formatBytes } from "@/lib/utils";
+import {
+  cn,
+  estimateReadingTime,
+  formatBytes,
+  fromDatetimeLocal,
+  toDatetimeLocal,
+} from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
@@ -50,6 +56,8 @@ interface FormState {
   status: PostStatus;
   companyId: number | null;
   coverImageUrl: string;
+  /** Valeur d'un `<input type="datetime-local">`, vide = laissé au serveur. */
+  publishedAt: string;
 }
 
 function initialState(post: Post | undefined, fallbackCompanyId: number | null): FormState {
@@ -60,6 +68,7 @@ function initialState(post: Post | undefined, fallbackCompanyId: number | null):
     status: post?.status ?? "DRAFT",
     companyId: post?.company?.id ?? fallbackCompanyId,
     coverImageUrl: post?.coverImageUrl ?? "",
+    publishedAt: toDatetimeLocal(post?.publishedAt),
   };
 }
 
@@ -120,6 +129,11 @@ export function PostEditor({ post }: { post?: Post }) {
       status: form.status,
       companyId: form.companyId ?? undefined,
       coverImageUrl: form.coverImageUrl,
+      // Une date de mise en ligne n'a de sens que sur un article publié.
+      publishedAt:
+        form.status === "PUBLISHED"
+          ? fromDatetimeLocal(form.publishedAt)
+          : undefined,
     });
 
     if (!parsed.success) {
@@ -136,21 +150,27 @@ export function PostEditor({ post }: { post?: Post }) {
     setErrors({});
 
     try {
-      if (post) {
-        await updatePost.mutateAsync({
-          id: post.id,
-          ...parsed.data,
-          coverImage: coverFile,
-        });
-      } else {
-        const created = await createPost.mutateAsync({
-          ...parsed.data,
-          coverImage: coverFile,
-        });
-        router.replace(`/posts/${created.id}/edit`);
-      }
+      const saved = post
+        ? await updatePost.mutateAsync({
+            id: post.id,
+            ...parsed.data,
+            coverImage: coverFile,
+          })
+        : await createPost.mutateAsync({
+            ...parsed.data,
+            coverImage: coverFile,
+          });
+
+      if (!post) router.replace(`/posts/${saved.id}/edit`);
 
       setCoverFile(null);
+      // Le serveur peut renseigner lui-même la date de mise en ligne et l'URL
+      // de couverture (téléversement) : on réaligne le formulaire dessus.
+      setForm((prev) => ({
+        ...prev,
+        publishedAt: toDatetimeLocal(saved.publishedAt),
+        coverImageUrl: saved.coverImageUrl ?? prev.coverImageUrl,
+      }));
       if (activeCompanyId && activeCompanyId !== parsed.data.companyId) {
         setActiveCompany(parsed.data.companyId);
       }
@@ -223,10 +243,40 @@ export function PostEditor({ post }: { post?: Post }) {
         </Select>
       </Field>
 
+      {form.status === "PUBLISHED" ? (
+        <Field
+          label="Date de mise en ligne"
+          htmlFor={`${idPrefix}-published-at`}
+          hint={form.publishedAt ? undefined : "auto"}
+          error={errors.publishedAt}
+        >
+          <div className="flex gap-2">
+            <Input
+              id={`${idPrefix}-published-at`}
+              type="datetime-local"
+              value={form.publishedAt}
+              onChange={(event) => set("publishedAt", event.target.value)}
+            />
+            {form.publishedAt ? (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => set("publishedAt", "")}
+                aria-label="Effacer la date de mise en ligne"
+              >
+                <X />
+              </Button>
+            ) : null}
+          </div>
+        </Field>
+      ) : null}
+
       <div className="rounded-lg bg-surface-2 px-3 py-2.5">
         <p className="text-xs leading-relaxed text-muted">
           {form.status === "PUBLISHED"
-            ? "L'article sera visible immédiatement sur le blog de l'entreprise."
+            ? form.publishedAt
+              ? "L'article portera la date de mise en ligne choisie ci-dessus."
+              : "Laissée vide, la date de mise en ligne est fixée par le serveur."
             : "Le brouillon n'est visible que dans ce dashboard."}
         </p>
       </div>

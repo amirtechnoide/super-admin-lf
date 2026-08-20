@@ -22,8 +22,8 @@ const groupClass =
   "[&_[cmdk-group-heading]]:px-2.5 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.08em] [&_[cmdk-group-heading]]:text-muted";
 
 /**
- * Recherche globale ⌘K. L'API n'expose pas de recherche plein texte : on
- * charge la page courante d'articles et cmdk filtre côté client.
+ * Recherche globale ⌘K. L'API n'expose pas de recherche plein texte, mais
+ * `GET /posts` renvoie tout le périmètre : cmdk filtre donc l'ensemble.
  */
 export function GlobalSearch() {
   const [open, setOpen] = React.useState(false);
@@ -32,12 +32,7 @@ export function GlobalSearch() {
   const activeCompanyId = useAppStore((s) => s.activeCompanyId);
   const setActiveCompany = useAppStore((s) => s.setActiveCompany);
   const { data: companies = [] } = useCompanies();
-  const { data: page } = usePosts({
-    companyId: activeCompanyId,
-    page: 0,
-    size: 100,
-  });
-  const posts = page?.content ?? [];
+  const { data: posts = [] } = usePosts({ companyId: activeCompanyId });
 
   React.useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {

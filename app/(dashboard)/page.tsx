@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -34,12 +35,16 @@ export default function OverviewPage() {
 
   // `/stats` est global : l'API n'accepte pas de filtre par entreprise.
   const stats = useStats();
-  const recent = usePosts({
-    companyId: activeCompanyId,
-    page: 0,
-    size: 5,
-    sort: "updatedAt,desc",
-  });
+  const posts = usePosts({ companyId: activeCompanyId });
+
+  // L'API ne trie ni ne pagine : on prend les cinq derniers modifiés.
+  const recentPosts = React.useMemo(
+    () =>
+      [...(posts.data ?? [])]
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+        .slice(0, 5),
+    [posts.data]
+  );
 
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -169,11 +174,11 @@ export default function OverviewPage() {
           </Button>
         </CardHeader>
 
-        {recent.isError ? (
-          <QueryError error={recent.error} onRetry={() => recent.refetch()} />
-        ) : recent.isPending ? (
+        {posts.isError ? (
+          <QueryError error={posts.error} onRetry={() => posts.refetch()} />
+        ) : posts.isPending ? (
           <ListSkeleton rows={4} />
-        ) : recent.data.content.length === 0 ? (
+        ) : recentPosts.length === 0 ? (
           <EmptyState
             icon={FileText}
             title="Aucun article pour l'instant"
@@ -189,7 +194,7 @@ export default function OverviewPage() {
           />
         ) : (
           <ul className="divide-y divide-border">
-            {recent.data.content.map((post) => (
+            {recentPosts.map((post) => (
               <li key={post.id}>
                 <Link
                   href={`/posts/${post.id}/edit`}

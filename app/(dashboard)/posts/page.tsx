@@ -66,8 +66,8 @@ export default function PostsPage() {
   const [query, setQuery] = React.useState("");
   const [toDelete, setToDelete] = React.useState<Post | null>(null);
 
-  // Changer de périmètre ou de filtre remet la pagination à zéro.
-  const scopeKey = `${activeCompanyId ?? "all"}|${status}`;
+  // Changer de périmètre, de filtre ou de recherche ramène en première page.
+  const scopeKey = `${activeCompanyId ?? "all"}|${status}|${query.trim()}`;
   const [scope, setScope] = React.useState(scopeKey);
   if (scope !== scopeKey) {
     setScope(scopeKey);
@@ -77,21 +77,26 @@ export default function PostsPage() {
   const posts = usePosts({
     companyId: activeCompanyId,
     status: status === "ALL" ? null : status,
-    page,
-    size: PAGE_SIZE,
-    sort: "createdAt,desc",
   });
 
   const deletePost = useDeletePost();
   const updatePost = useUpdatePost();
 
-  // L'API n'expose pas de recherche : on filtre la page chargée, et on le dit.
-  const rows = (posts.data?.content ?? []).filter((post) =>
-    query.trim()
-      ? `${post.title} ${post.excerpt} ${post.slug}`
-          .toLowerCase()
-          .includes(query.trim().toLowerCase())
-      : true
+  // L'API renvoie tout le périmètre d'un coup : la recherche porte donc sur
+  // l'ensemble des articles, et la pagination est calculée ici.
+  const filtered = React.useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return posts.data ?? [];
+    return (posts.data ?? []).filter((post) =>
+      `${post.title} ${post.excerpt} ${post.slug}`.toLowerCase().includes(needle)
+    );
+  }, [posts.data, query]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages - 1);
+  const rows = filtered.slice(
+    currentPage * PAGE_SIZE,
+    currentPage * PAGE_SIZE + PAGE_SIZE
   );
 
   async function togglePublication(post: Post) {
@@ -137,8 +142,7 @@ export default function PostsPage() {
     }
   }
 
-  const totalPages = posts.data?.totalPages ?? 0;
-  const totalElements = posts.data?.totalElements ?? 0;
+  const totalElements = filtered.length;
 
   return (
     <div className="space-y-5">
@@ -166,9 +170,9 @@ export default function PostsPage() {
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Filtrer cette page…"
+              placeholder="Rechercher un article…"
               className="pl-9"
-              aria-label="Filtrer les articles de la page courante"
+              aria-label="Rechercher un article"
             />
           </div>
           <Select
@@ -203,18 +207,18 @@ export default function PostsPage() {
             icon={query ? Search : FileText}
             title={
               query
-                ? "Aucun article ne correspond sur cette page"
+                ? "Aucun article ne correspond"
                 : "Aucun article pour l'instant"
             }
             description={
               query
-                ? "Le filtre ne porte que sur la page affichée : changez de page ou effacez le filtre."
+                ? `Aucun résultat pour « ${query.trim()} ». Essayez un autre terme.`
                 : "Créez le premier article — il apparaîtra immédiatement dans cette liste."
             }
             action={
               query ? (
                 <Button variant="outline" onClick={() => setQuery("")}>
-                  Effacer le filtre
+                  Effacer la recherche
                 </Button>
               ) : (
                 <Button asChild>
@@ -363,7 +367,7 @@ export default function PostsPage() {
         {totalPages > 1 ? (
           <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-3 sm:px-5">
             <p className="text-xs text-muted tabular">
-              Page {page + 1} sur {totalPages} · {totalElements} article
+              Page {currentPage + 1} sur {totalPages} · {totalElements} article
               {totalElements > 1 ? "s" : ""}
             </p>
             <div className="flex items-center gap-1.5">
@@ -371,7 +375,7 @@ export default function PostsPage() {
                 variant="outline"
                 size="icon-sm"
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
-                disabled={page === 0 || posts.isFetching}
+                disabled={currentPage === 0}
                 aria-label="Page précédente"
               >
                 <ChevronLeft />
@@ -380,7 +384,7 @@ export default function PostsPage() {
                 variant="outline"
                 size="icon-sm"
                 onClick={() => setPage((p) => p + 1)}
-                disabled={page + 1 >= totalPages || posts.isFetching}
+                disabled={currentPage + 1 >= totalPages}
                 aria-label="Page suivante"
               >
                 <ChevronRight />

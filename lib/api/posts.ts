@@ -1,8 +1,7 @@
 import { buildMultipartBody, request, requestVoid } from "./client";
 import {
-  pagePostSchema,
+  postListSchema,
   postSchema,
-  type PagePost,
   type Post,
   type PostFormValues,
   type PostStatus,
@@ -11,30 +10,27 @@ import {
 export interface PostListParams {
   companyId?: number | null;
   status?: PostStatus | null;
-  page?: number;
-  size?: number;
-  /** Format Spring Data, ex. `createdAt,desc`. */
-  sort?: string;
 }
 
+/**
+ * `GET /posts` ne pagine plus et ne trie plus : il renvoie l'intégralité des
+ * articles du périmètre demandé. On impose donc un ordre stable ici — le plus
+ * récent d'abord — pour que l'affichage ne dépende pas de l'ordre de la base.
+ */
 export async function getPosts({
   companyId,
   status,
-  page = 0,
-  size = 10,
-  sort = "createdAt,desc",
-}: PostListParams = {}): Promise<PagePost> {
-  return request(pagePostSchema, {
+}: PostListParams = {}): Promise<Post[]> {
+  const posts = await request(postListSchema, {
     url: "/posts",
     method: "GET",
     params: {
-      page,
-      size,
-      sort,
       ...(companyId ? { companyId } : {}),
       ...(status ? { status } : {}),
     },
   });
+
+  return [...posts].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 export async function getPost(id: number): Promise<Post> {
@@ -61,6 +57,7 @@ function toQueryParams(values: PostFormValues) {
     companyId: values.companyId,
     ...(values.excerpt ? { excerpt: values.excerpt } : {}),
     ...(values.coverImageUrl ? { coverImageUrl: values.coverImageUrl } : {}),
+    ...(values.publishedAt ? { publishedAt: values.publishedAt } : {}),
   };
 }
 

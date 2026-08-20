@@ -16,13 +16,20 @@ if (!API_BASE_URL && typeof window !== "undefined") {
   );
 }
 
+/**
+ * `NEXT_PUBLIC_API_BASE_URL` peut être relative (`/api/backend`) : les appels
+ * passent alors par le proxy Next, ce qui évite le CORS absent côté backend.
+ */
+const isTunnel = /\.loca\.lt$/i.test(
+  API_BASE_URL.startsWith("http") ? new URL(API_BASE_URL).hostname : ""
+);
+
 export const http = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30_000,
-  headers: {
-    // Neutralise la page d'avertissement de localtunnel, sans effet ailleurs.
-    "bypass-tunnel-reminder": "true",
-  },
+  // Neutralise la page d'avertissement de localtunnel. Ailleurs, cet en-tête
+  // ne servirait qu'à déclencher un preflight inutile.
+  headers: isTunnel ? { "bypass-tunnel-reminder": "true" } : {},
 });
 
 /** Routes publiques : ni jeton, ni tentative de rafraîchissement. */
@@ -57,7 +64,10 @@ async function refreshAccessToken(): Promise<string> {
   const response = await axios.post(
     `${API_BASE_URL}/auth/refresh`,
     { refreshToken },
-    { headers: { "bypass-tunnel-reminder": "true" }, timeout: 30_000 }
+    {
+      headers: isTunnel ? { "bypass-tunnel-reminder": "true" } : {},
+      timeout: 30_000,
+    }
   );
 
   const session = authResponseSchema.parse(response.data);

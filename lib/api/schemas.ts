@@ -99,19 +99,11 @@ export const postSchema = z.object({
 });
 export type Post = z.infer<typeof postSchema>;
 
-/** Page Spring Data. On ne valide que les champs réellement consommés. */
-export const pagePostSchema = z.object({
-  content: z.array(postSchema),
-  totalElements: z.number(),
-  totalPages: z.number(),
-  size: z.number(),
-  number: z.number(),
-  first: z.boolean(),
-  last: z.boolean(),
-  numberOfElements: z.number().optional(),
-  empty: z.boolean().optional(),
-});
-export type PagePost = z.infer<typeof pagePostSchema>;
+/**
+ * `GET /posts` renvoie un tableau brut : la pagination serveur a été retirée du
+ * contrat. Le tri et le découpage en pages se font donc côté client.
+ */
+export const postListSchema = z.array(postSchema);
 
 /**
  * Le backend attend `title`, `content`, `excerpt`… en **paramètres de requête**
@@ -135,6 +127,8 @@ export const postFormSchema = z.object({
   status: postStatusSchema,
   companyId: z.number({ error: "Choisissez une entreprise." }).int().positive(),
   coverImageUrl: z.string().trim().optional(),
+  /** Date de mise en ligne, désormais pilotable depuis le dashboard. */
+  publishedAt: z.string().trim().optional(),
 });
 export type PostFormValues = z.infer<typeof postFormSchema>;
 

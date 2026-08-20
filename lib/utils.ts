@@ -21,6 +21,22 @@ export function parseApiDate(value: string): Date {
   return new Date(hasTimezone ? value : `${value}${SERVER_UTC_OFFSET}`);
 }
 
+/**
+ * `publishedAt` circule en `LocalDateTime` nu dans les deux sens. On le
+ * manipule donc **tel quel**, par découpage de chaîne : l'admin voit et saisit
+ * exactement l'heure que le serveur stockera, sans conversion susceptible de
+ * décaler la valeur à chaque aller-retour.
+ */
+export function toDatetimeLocal(serverDateTime?: string | null): string {
+  if (!serverDateTime) return "";
+  return serverDateTime.slice(0, 16);
+}
+
+export function fromDatetimeLocal(value: string): string | undefined {
+  if (!value) return undefined;
+  return value.length === 16 ? `${value}:00` : value;
+}
+
 const DATE_FMT = new Intl.DateTimeFormat("fr-FR", {
   day: "2-digit",
   month: "short",

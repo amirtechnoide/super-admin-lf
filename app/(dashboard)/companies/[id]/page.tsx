@@ -45,10 +45,9 @@ export default function CompanyDetailPage({
 
   const posts = usePosts({
     companyId: Number.isFinite(companyId) ? companyId : null,
-    page: 0,
-    size: 5,
-    sort: "createdAt,desc",
   });
+  // L'API renvoie tout : on n'affiche ici que les cinq derniers.
+  const latestPosts = (posts.data ?? []).slice(0, 5);
 
   const postCount =
     stats.data?.postsPerCompany.find((r) => r.companyName === company?.name)
@@ -243,7 +242,7 @@ export default function CompanyDetailPage({
           </div>
         ) : posts.isError ? (
           <QueryError error={posts.error} onRetry={() => posts.refetch()} />
-        ) : posts.data.content.length === 0 ? (
+        ) : latestPosts.length === 0 ? (
           <EmptyState
             icon={FileText}
             title="Aucun article pour cette entreprise"
@@ -251,7 +250,7 @@ export default function CompanyDetailPage({
           />
         ) : (
           <ul className="divide-y divide-border">
-            {posts.data.content.map((post) => (
+            {latestPosts.map((post) => (
               <li key={post.id}>
                 <Link
                   href={`/posts/${post.id}/edit`}

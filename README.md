@@ -71,14 +71,27 @@ et la liste des routes attendues, plutôt que des données inventées.
   échouent). L'éditeur affiche un compteur et bloque l'envoi avant l'appel.
 - **Corps multipart obligatoire.** Ces mêmes routes refusent une requête sans
   corps (415) : un `FormData` est toujours envoyé, vide si aucun fichier.
-- **Deux statuts seulement** : `DRAFT` et `PUBLISHED`.
+- **`GET /posts` ne pagine ni ne trie.** Il renvoie l'intégralité des articles
+  du périmètre : le tri (plus récent d'abord), la recherche et le découpage en
+  pages sont faits côté client. À revoir si le volume grandit — chaque
+  ouverture de la liste télécharge tout.
+- **Deux statuts seulement** : `DRAFT` et `PUBLISHED`. `publishedAt` est
+  pilotable depuis l'éditeur quand l'article est publié ; laissé vide, le
+  serveur fixe la date.
 - **`/stats` est global** — il n'accepte pas de filtre par entreprise.
-- **Pas de recherche plein texte** : le champ de la liste filtre la page chargée,
-  et son libellé le dit.
 - **Pas de couleur par entreprise** : l'accent est dérivé du code de
   l'entreprise, donc stable partout sans être stocké.
+- **Dates en `LocalDateTime` nu** : interprétées dans le fuseau du serveur
+  (`Africa/Douala`) et non celui du navigateur, sinon tout admin situé ailleurs
+  verrait des dates décalées. `publishedAt` circule tel quel, sans conversion.
 - `logoUrl` vaut parfois la chaîne littérale `"string"` dans les données
   existantes : le schéma Zod la normalise en `null`.
+
+## Exposition publique constatée
+
+`GET /posts` et `GET /stats` répondent **200 sans jeton** ; `GET /companies` et
+toutes les écritures sont bien protégées (403). `POST /auth/reset-password` est
+également public — voir la note de sécurité dans le suivi projet.
 
 ## Changer d'environnement
 

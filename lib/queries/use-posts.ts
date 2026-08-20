@@ -1,6 +1,6 @@
 "use client";
 
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createPost,
   deletePost,
@@ -12,12 +12,11 @@ import {
 } from "@/lib/api/posts";
 import { queryKeys } from "./keys";
 
-export function usePosts(params: PostListParams) {
+/** Retourne tous les articles du périmètre : l'API ne pagine plus. */
+export function usePosts(params: PostListParams = {}) {
   return useQuery({
     queryKey: queryKeys.posts.list(params),
     queryFn: () => getPosts(params),
-    // La table ne doit pas clignoter quand on change de page ou de filtre.
-    placeholderData: keepPreviousData,
   });
 }
 
