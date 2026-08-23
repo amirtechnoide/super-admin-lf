@@ -68,19 +68,34 @@ function SessionBootstrap({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/**
+ * Toasts en haut à droite, là où le regard revient après une action, et
+ * colorés par nature : vert pour une réussite, rouge pour un échec. La couleur
+ * vient des tokens du thème, pas de la palette par défaut de sonner, pour que
+ * clair et sombre restent cohérents.
+ */
 function ThemedToaster() {
   const { resolvedTheme } = useTheme();
   return (
     <Toaster
-      position="bottom-right"
+      position="top-right"
       theme={(resolvedTheme as "light" | "dark") ?? "light"}
+      duration={4000}
       toastOptions={{
         classNames: {
           toast:
-            "!rounded-xl !border !border-border !bg-surface !text-text !shadow-md !font-sans",
-          description: "!text-muted",
+            "!rounded-xl !border !shadow-md !font-sans !border-border !bg-surface !text-text",
+          title: "!text-[13px] !font-medium",
+          description: "!text-xs !opacity-80",
           actionButton: "!bg-accent !text-accent-contrast !rounded-lg",
           cancelButton: "!bg-surface-2 !text-text !rounded-lg",
+          success:
+            "!bg-success/10 !border-success/30 !text-success [&_[data-icon]]:!text-success dark:!bg-success/15",
+          error:
+            "!bg-danger/10 !border-danger/30 !text-danger [&_[data-icon]]:!text-danger dark:!bg-danger/15",
+          warning:
+            "!bg-warning/10 !border-warning/30 !text-warning [&_[data-icon]]:!text-warning dark:!bg-warning/15",
+          info: "!bg-info/10 !border-info/30 !text-info [&_[data-icon]]:!text-info dark:!bg-info/15",
         },
       }}
     />
@@ -106,7 +121,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           </AccentProvider>
         </SessionBootstrap>
       </ThemeProvider>
-      <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
+      <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-right" />
     </QueryClientProvider>
   );
 }

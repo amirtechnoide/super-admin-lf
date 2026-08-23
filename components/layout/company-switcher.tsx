@@ -167,11 +167,25 @@ export function CompanyLogo({
   company,
   className,
 }: {
-  company: Company;
+  company: Company | null;
   className?: string;
 }) {
   const [failed, setFailed] = React.useState(false);
   const accent = accentForCompany(company);
+
+  if (!company) {
+    return (
+      <span
+        aria-hidden
+        className={cn(
+          "flex shrink-0 items-center justify-center rounded-lg bg-surface-2 font-display text-sm font-semibold text-muted",
+          className
+        )}
+      >
+        —
+      </span>
+    );
+  }
 
   if (company.logoUrl && !failed) {
     return (

@@ -5,6 +5,8 @@ import Link from "next/link";
 import {
   ArrowRight,
   Building2,
+  ChevronRight,
+  Clock,
   FileText,
   PencilLine,
   PenSquare,
@@ -27,6 +29,7 @@ import {
   CompanyDot,
   useActiveCompany,
 } from "@/components/layout/company-switcher";
+import { PostThumb } from "@/components/posts/post-thumb";
 
 export default function OverviewPage() {
   const activeCompanyId = useAppStore((s) => s.activeCompanyId);
@@ -195,25 +198,33 @@ export default function OverviewPage() {
         ) : (
           <ul className="divide-y divide-border">
             {recentPosts.map((post) => (
-              <li key={post.id}>
+              <li key={post.id} className="group">
                 <Link
                   href={`/posts/${post.id}/edit`}
-                  className="flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-surface-2 sm:items-center sm:px-5"
+                  className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-2 sm:gap-3.5 sm:px-5"
                 >
-                  {aggregated ? (
-                    <span className="mt-1.5 shrink-0 sm:mt-0">
-                      <CompanyDot company={post.company} />
-                    </span>
-                  ) : null}
+                  {/* Vignette : couverture si elle existe, sinon le logo. */}
+                  <PostThumb post={post} />
+
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{post.title}</p>
-                    <p className="mt-0.5 truncate font-mono text-[11px] text-muted">
-                      {formatRelative(post.updatedAt)}
-                      {aggregated && post.company ? ` · ${post.company.name}` : ""}
+                    <p className="truncate text-sm font-medium leading-snug transition-colors group-hover:text-accent">
+                      {post.title}
+                    </p>
+                    <p className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[11px] text-muted">
+                      {post.company ? (
+                        <span className="truncate">{post.company.name}</span>
+                      ) : null}
+                      {post.company ? <span aria-hidden>·</span> : null}
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="size-3" />
+                        {formatRelative(post.updatedAt)}
+                      </span>
                     </p>
                   </div>
-                  <div className="shrink-0">
+
+                  <div className="flex shrink-0 items-center gap-2">
                     <PostStatusBadge status={post.status} />
+                    <ChevronRight className="size-4 text-muted opacity-0 transition-opacity group-hover:opacity-100" />
                   </div>
                 </Link>
               </li>

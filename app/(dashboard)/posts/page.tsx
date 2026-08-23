@@ -8,6 +8,8 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
+  LayoutGrid,
+  List,
   MoreHorizontal,
   PenSquare,
   Search,
@@ -17,14 +19,14 @@ import {
   X,
 } from "lucide-react";
 import { usePosts, useDeletePost, useUpdatePost } from "@/lib/queries/use-posts";
-import { useAppStore } from "@/lib/store/app-store";
+import { useAppStore, type PostsView } from "@/lib/store/app-store";
 import {
   POST_STATUS_LABELS,
   type Post,
   type PostStatus,
 } from "@/lib/api/schemas";
 import { ApiError } from "@/lib/api/errors";
-import { formatDate, formatRelative } from "@/lib/utils";
+import { cn, formatDate, formatRelative } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -49,16 +51,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  CompanyDot,
+  CompanyLogo,
   useActiveCompany,
 } from "@/components/layout/company-switcher";
+import { PostCard, PostCardSkeleton } from "@/components/posts/post-card";
 
-const PAGE_SIZE = 10;
+/** La grille respire mieux avec un multiple de 3 ; la table reste plus dense. */
+const PAGE_SIZE: Record<PostsView, number> = { cards: 12, table: 10 };
 
 export default function PostsPage() {
   const router = useRouter();
   const activeCompanyId = useAppStore((s) => s.activeCompanyId);
   const activeCompany = useActiveCompany();
+  const view = useAppStore((s) => s.postsView);
+  const setView = useAppStore((s) => s.setPostsView);
   const aggregated = activeCompanyId === null;
 
   const [page, setPage] = React.useState(0);
@@ -66,8 +72,8 @@ export default function PostsPage() {
   const [query, setQuery] = React.useState("");
   const [toDelete, setToDelete] = React.useState<Post | null>(null);
 
-  // Changer de périmètre, de filtre ou de recherche ramène en première page.
-  const scopeKey = `${activeCompanyId ?? "all"}|${status}|${query.trim()}`;
+  // Changer de périmètre, de filtre, de recherche ou de vue ramène en page 1.
+  const scopeKey = `${activeCompanyId ?? "all"}|${status}|${query.trim()}|${view}`;
   const [scope, setScope] = React.useState(scopeKey);
   if (scope !== scopeKey) {
     setScope(scopeKey);
@@ -92,19 +98,21 @@ export default function PostsPage() {
     );
   }, [posts.data, query]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageSize = PAGE_SIZE[view];
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, totalPages - 1);
   const rows = filtered.slice(
-    currentPage * PAGE_SIZE,
-    currentPage * PAGE_SIZE + PAGE_SIZE
+    currentPage * pageSize,
+    currentPage * pageSize + pageSize
   );
+  const totalElements = filtered.length;
 
   async function togglePublication(post: Post) {
-    // Le PUT exige un companyId : sans entreprise rattachee, on ne peut pas
-    // republier depuis la liste sans en choisir une dans l'editeur.
+    // Le PUT exige un companyId : sans entreprise rattachée, on ne peut pas
+    // republier depuis la liste sans en choisir une dans l'éditeur.
     if (!post.company) {
       toast.error(
-        "Cet article n'est rattache a aucune entreprise : ouvrez-le pour en choisir une."
+        "Cet article n'est rattaché à aucune entreprise : ouvrez-le pour en choisir une."
       );
       return;
     }
@@ -142,7 +150,43 @@ export default function PostsPage() {
     }
   }
 
-  const totalElements = filtered.length;
+  /** Même menu d'actions dans les deux vues. */
+  function ActionsMenu({ post }: { post: Post }) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Actions sur ${post.title}`}
+            className="bg-surface/80 backdrop-blur"
+          >
+            <MoreHorizontal />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={() => router.push(`/posts/${post.id}/edit`)}>
+            <SquarePen />
+            Modifier
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => togglePublication(post)}>
+            <Send />
+            {post.status === "PUBLISHED" ? "Repasser en brouillon" : "Publier"}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem destructive onSelect={() => setToDelete(post)}>
+            <Trash2 />
+            Supprimer
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  const viewOptions: { value: PostsView; label: string; icon: typeof List }[] = [
+    { value: "cards", label: "Vue en cartes", icon: LayoutGrid },
+    { value: "table", label: "Vue en tableau", icon: List },
+  ];
 
   return (
     <div className="space-y-5">
@@ -175,40 +219,87 @@ export default function PostsPage() {
               aria-label="Rechercher un article"
             />
           </div>
-          <Select
-            value={status}
-            onValueChange={(value) => setStatus(value as PostStatus | "ALL")}
-          >
-            <SelectTrigger className="sm:w-44" aria-label="Filtrer par statut">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Tous les statuts</SelectItem>
-              <SelectItem value="PUBLISHED">
-                {POST_STATUS_LABELS.PUBLISHED}
-              </SelectItem>
-              <SelectItem value="DRAFT">{POST_STATUS_LABELS.DRAFT}</SelectItem>
-            </SelectContent>
-          </Select>
-          {query ? (
-            <Button variant="ghost" size="sm" onClick={() => setQuery("")}>
-              <X />
-              Effacer
-            </Button>
-          ) : null}
+
+          <div className="flex items-center gap-2">
+            <Select
+              value={status}
+              onValueChange={(value) => setStatus(value as PostStatus | "ALL")}
+            >
+              <SelectTrigger
+                className="min-w-0 flex-1 sm:w-44 sm:flex-none"
+                aria-label="Filtrer par statut"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Tous les statuts</SelectItem>
+                <SelectItem value="PUBLISHED">
+                  {POST_STATUS_LABELS.PUBLISHED}
+                </SelectItem>
+                <SelectItem value="DRAFT">{POST_STATUS_LABELS.DRAFT}</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Bascule cartes / tableau, mémorisée entre les sessions. */}
+            <div
+              role="group"
+              aria-label="Affichage de la liste"
+              className="flex shrink-0 items-center gap-0.5 rounded-lg border border-border bg-surface-2 p-0.5"
+            >
+              {viewOptions.map((option) => {
+                const Icon = option.icon;
+                const active = view === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setView(option.value)}
+                    aria-label={option.label}
+                    aria-pressed={active}
+                    title={option.label}
+                    className={cn(
+                      "flex size-8 max-md:size-9 items-center justify-center rounded-md transition-colors",
+                      active
+                        ? "bg-surface text-text shadow-xs"
+                        : "text-muted hover:text-text"
+                    )}
+                  >
+                    <Icon className="size-4" />
+                  </button>
+                );
+              })}
+            </div>
+
+            {query ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setQuery("")}
+                aria-label="Effacer la recherche"
+              >
+                <X />
+              </Button>
+            ) : null}
+          </div>
         </div>
 
         {posts.isError ? (
           <QueryError error={posts.error} onRetry={() => posts.refetch()} />
         ) : posts.isPending ? (
-          <TableSkeleton rows={5} columns={4} />
+          view === "cards" ? (
+            <div className="grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 sm:p-4 xl:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <PostCardSkeleton key={index} />
+              ))}
+            </div>
+          ) : (
+            <TableSkeleton rows={5} columns={4} />
+          )
         ) : rows.length === 0 ? (
           <EmptyState
             icon={query ? Search : FileText}
             title={
-              query
-                ? "Aucun article ne correspond"
-                : "Aucun article pour l'instant"
+              query ? "Aucun article ne correspond" : "Aucun article pour l'instant"
             }
             description={
               query
@@ -230,6 +321,17 @@ export default function PostsPage() {
               )
             }
           />
+        ) : view === "cards" ? (
+          <div className="grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 sm:p-4 xl:grid-cols-3">
+            {rows.map((post) => (
+              <PostCard
+                key={post.id}
+                post={post}
+                showCompany={aggregated}
+                actions={<ActionsMenu post={post} />}
+              />
+            ))}
+          </div>
         ) : (
           <>
             <div className="hidden md:block overflow-x-auto scrollbar-thin">
@@ -276,7 +378,10 @@ export default function PostsPage() {
                       </td>
                       <td className="px-3 py-3 align-middle">
                         <span className="flex items-center gap-2 whitespace-nowrap text-[13px] text-muted">
-                          <CompanyDot company={post.company} />
+                          <CompanyLogo
+                            company={post.company}
+                            className="size-6 rounded-md text-[9px]"
+                          />
                           {post.company?.name ?? "—"}
                         </span>
                       </td>
@@ -287,43 +392,7 @@ export default function PostsPage() {
                         className="px-3 py-3 text-right align-middle"
                         onClick={(event) => event.stopPropagation()}
                       >
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              aria-label={`Actions sur ${post.title}`}
-                            >
-                              <MoreHorizontal />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onSelect={() =>
-                                router.push(`/posts/${post.id}/edit`)
-                              }
-                            >
-                              <SquarePen />
-                              Modifier
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onSelect={() => togglePublication(post)}
-                            >
-                              <Send />
-                              {post.status === "PUBLISHED"
-                                ? "Repasser en brouillon"
-                                : "Publier"}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              destructive
-                              onSelect={() => setToDelete(post)}
-                            >
-                              <Trash2 />
-                              Supprimer
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <ActionsMenu post={post} />
                       </td>
                     </tr>
                   ))}
@@ -351,7 +420,10 @@ export default function PostsPage() {
                     ) : null}
                     <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] text-muted">
                       <span className="inline-flex items-center gap-1.5">
-                        <CompanyDot company={post.company} />
+                        <CompanyLogo
+                          company={post.company}
+                          className="size-5 rounded-md text-[9px]"
+                        />
                         {post.company?.name ?? "—"}
                       </span>
                       <span aria-hidden>·</span>

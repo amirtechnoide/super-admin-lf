@@ -4,7 +4,7 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { ImagePlus, X } from "lucide-react";
+import { ImagePlus } from "lucide-react";
 import {
   companyFormSchema,
   type Company,
@@ -12,7 +12,7 @@ import {
 } from "@/lib/api/schemas";
 import { ApiError } from "@/lib/api/errors";
 import { useCreateCompany, useUpdateCompany } from "@/lib/queries/use-companies";
-import { formatBytes } from "@/lib/utils";
+import { ImagePreview } from "@/components/ui/image-preview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, Label } from "@/components/ui/label";
@@ -67,6 +67,8 @@ export function CompanyFormDialog({
   }
 
   const pending = createCompany.isPending || updateCompany.isPending;
+  // Suivi en direct : l'aperçu doit réagir à une URL collée dans le champ.
+  const logoUrl = form.watch("logoUrl");
 
   async function submit(values: CompanyFormValues) {
     try {
@@ -127,25 +129,27 @@ export function CompanyFormDialog({
 
             <div className="space-y-2">
               <Label>Logo</Label>
-              {logo ? (
-                <div className="flex items-center gap-3 rounded-lg border border-border bg-surface-2 p-3">
-                  <ImagePlus className="size-4 shrink-0 text-accent" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-medium">
-                      {logo.name}
-                    </p>
-                    <p className="font-mono text-[11px] text-muted">
-                      {formatBytes(logo.size)}
-                    </p>
-                  </div>
+              {logo || logoUrl ? (
+                <div className="space-y-2">
+                  <ImagePreview
+                    file={logo}
+                    url={logoUrl || null}
+                    aspect="aspect-[3/1]"
+                    onRemove={() => {
+                      // Un fichier choisi prime sur l'URL : on le retire d'abord.
+                      if (logo) setLogo(null);
+                      else form.setValue("logoUrl", "");
+                    }}
+                  />
                   <Button
                     type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => setLogo(null)}
-                    aria-label="Retirer le logo"
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => fileInputRef.current?.click()}
                   >
-                    <X />
+                    <ImagePlus />
+                    {logo ? "Changer de fichier" : "Téléverser un logo"}
                   </Button>
                 </div>
               ) : (

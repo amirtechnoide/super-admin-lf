@@ -30,7 +30,11 @@ export function Badge({ className, tone, ...props }: BadgeProps) {
   return <span className={cn(badgeVariants({ tone }), className)} {...props} />;
 }
 
-/** Badge de statut d'article — l'API n'expose que DRAFT et PUBLISHED. */
+/**
+ * Badge de statut d'article — l'API n'expose que DRAFT et PUBLISHED.
+ * Le vert dit « en ligne », l'ambre « pas encore » : la couleur porte
+ * l'information, indépendamment de l'accent de l'entreprise.
+ */
 export function PostStatusBadge({
   status,
   className,
@@ -38,16 +42,14 @@ export function PostStatusBadge({
   status: PostStatus;
   className?: string;
 }) {
+  const published = status === "PUBLISHED";
   return (
-    <Badge
-      tone={status === "PUBLISHED" ? "accent" : "neutral"}
-      className={className}
-    >
+    <Badge tone={published ? "success" : "warning"} className={className}>
       <span
         aria-hidden
         className={cn(
           "size-1.5 rounded-full",
-          status === "PUBLISHED" ? "bg-accent" : "bg-muted"
+          published ? "bg-success" : "bg-warning"
         )}
       />
       {POST_STATUS_LABELS[status]}

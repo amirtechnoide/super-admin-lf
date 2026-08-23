@@ -23,7 +23,6 @@ import { ApiError } from "@/lib/api/errors";
 import {
   cn,
   estimateReadingTime,
-  formatBytes,
   fromDatetimeLocal,
   toDatetimeLocal,
 } from "@/lib/utils";
@@ -32,6 +31,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ImagePreview } from "@/components/ui/image-preview";
 import {
   Accordion,
   AccordionContent,
@@ -47,7 +47,7 @@ import {
 } from "@/components/ui/select";
 import { RichTextEditor } from "./rich-text-editor";
 import { PreviewDialog } from "./preview-dialog";
-import { CompanyDot } from "@/components/layout/company-switcher";
+import { CompanyLogo } from "@/components/layout/company-switcher";
 
 interface FormState {
   title: string;
@@ -161,7 +161,17 @@ export function PostEditor({ post }: { post?: Post }) {
             coverImage: coverFile,
           });
 
-      if (!post) router.replace(`/posts/${saved.id}/edit`);
+      if (activeCompanyId && activeCompanyId !== parsed.data.companyId) {
+        setActiveCompany(parsed.data.companyId);
+      }
+      toast.success(SUCCESS_TOAST[parsed.data.status]);
+
+      // À la création, on renvoie vers la liste : l'article y est visible
+      // immédiatement, ce qui vaut mieux que rester sur un formulaire vidé.
+      if (!post) {
+        router.push("/posts");
+        return;
+      }
 
       setCoverFile(null);
       // Le serveur peut renseigner lui-même la date de mise en ligne et l'URL
@@ -171,10 +181,6 @@ export function PostEditor({ post }: { post?: Post }) {
         publishedAt: toDatetimeLocal(saved.publishedAt),
         coverImageUrl: saved.coverImageUrl ?? prev.coverImageUrl,
       }));
-      if (activeCompanyId && activeCompanyId !== parsed.data.companyId) {
-        setActiveCompany(parsed.data.companyId);
-      }
-      toast.success(SUCCESS_TOAST[parsed.data.status]);
     } catch (error) {
       toast.error(
         error instanceof ApiError ? error.message : "L'enregistrement a échoué."
@@ -217,7 +223,10 @@ export function PostEditor({ post }: { post?: Post }) {
             {companies.map((option) => (
               <SelectItem key={option.id} value={String(option.id)}>
                 <span className="flex items-center gap-2">
-                  <CompanyDot company={option} />
+                  <CompanyLogo
+                    company={option}
+                    className="size-5 rounded-md text-[9px]"
+                  />
                   {option.name}
                 </span>
               </SelectItem>
@@ -225,6 +234,19 @@ export function PostEditor({ post }: { post?: Post }) {
           </SelectContent>
         </Select>
       </Field>
+
+      {/* L'entreprise retenue est rappelée visuellement : on publie sur son blog. */}
+      {company ? (
+        <div className="flex items-center gap-2.5 rounded-lg border border-border bg-surface-2 p-2.5">
+          <CompanyLogo company={company} className="size-9 text-[11px]" />
+          <div className="min-w-0">
+            <p className="truncate text-[13px] font-medium">{company.name}</p>
+            <p className="truncate font-mono text-[11px] text-muted">
+              {company.code}
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       <Field label="Statut" htmlFor={`${idPrefix}-status`}>
         <Select
@@ -302,42 +324,16 @@ export function PostEditor({ post }: { post?: Post }) {
 
   const coverPanel = (idPrefix: string) => (
     <div className="space-y-3">
-      {coverFile ? (
-        <div className="flex items-center gap-3 rounded-lg border border-border bg-surface-2 p-3">
-          <ImagePlus className="size-4 shrink-0 text-accent" />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[13px] font-medium">{coverFile.name}</p>
-            <p className="font-mono text-[11px] text-muted">
-              {formatBytes(coverFile.size)} · envoyé à l&apos;enregistrement
-            </p>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => setCoverFile(null)}
-            aria-label="Retirer le fichier"
-          >
-            <X />
-          </Button>
-        </div>
-      ) : form.coverImageUrl ? (
-        <div className="relative overflow-hidden rounded-lg border border-border">
-          {/* eslint-disable-next-line @next/next/no-img-element -- domaine R2 non déclaré */}
-          <img
-            src={form.coverImageUrl}
-            alt=""
-            className="aspect-[16/9] w-full bg-surface-2 object-cover"
-          />
-          <Button
-            variant="secondary"
-            size="icon-sm"
-            className="absolute right-2 top-2"
-            onClick={() => set("coverImageUrl", "")}
-            aria-label="Retirer l'image de couverture"
-          >
-            <X />
-          </Button>
-        </div>
+      {coverFile || form.coverImageUrl ? (
+        <ImagePreview
+          file={coverFile}
+          url={form.coverImageUrl || null}
+          onRemove={() => {
+            // Un fichier choisi prime sur l'URL : on le retire d'abord.
+            if (coverFile) setCoverFile(null);
+            else set("coverImageUrl", "");
+          }}
+        />
       ) : (
         <button
           type="button"
@@ -367,7 +363,8 @@ export function PostEditor({ post }: { post?: Post }) {
           size="sm"
           onClick={() => fileInputRef.current?.click()}
         >
-          Téléverser un fichier
+          <ImagePlus />
+          {coverFile ? "Changer de fichier" : "Téléverser un fichier"}
         </Button>
       </div>
 
@@ -558,6 +555,8 @@ export function PostEditor({ post }: { post?: Post }) {
         coverImage={form.coverImageUrl || undefined}
         readingTime={readingTime}
         companyName={company?.name ?? "—"}
+        status={form.status}
+        publishedAt={form.publishedAt || undefined}
       />
 
       <ConfirmDialog

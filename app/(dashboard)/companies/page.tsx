@@ -2,10 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUpRight, Building2, Plus } from "lucide-react";
+import { ArrowUpRight, Building2, FileText, Plus } from "lucide-react";
 import { useCompanies } from "@/lib/queries/use-companies";
 import { useStats } from "@/lib/queries/use-stats";
 import { useAppStore } from "@/lib/store/app-store";
+import { accentForCompany } from "@/lib/theme/company-accent";
 import { formatNumber } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -77,32 +78,42 @@ export default function CompaniesPage() {
                 <Link
                   href={`/companies/${company.id}`}
                   onClick={() => setActiveCompany(company.id)}
-                  className="group flex h-full flex-col rounded-xl border border-border bg-surface p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-border-strong hover:shadow-md sm:p-5"
+                  className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-xs transition-all duration-200 hover:-translate-y-1 hover:border-border-strong hover:shadow-lg"
                 >
-                  <div className="flex items-start gap-3">
-                    <CompanyLogo company={company} className="size-10" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">
-                        {company.name}
-                      </p>
-                      <p className="truncate font-mono text-[11px] text-muted">
-                        {company.code}
-                      </p>
-                    </div>
-                    <ArrowUpRight className="size-4 shrink-0 text-muted transition-colors group-hover:text-text" />
-                  </div>
+                  {/* Bandeau teinté : l'entreprise se reconnaît au premier regard. */}
+                  <div
+                    className="h-16 w-full"
+                    style={{
+                      backgroundImage: `linear-gradient(120deg, ${accentForCompany(company)}2e, ${accentForCompany(company)}0a)`,
+                    }}
+                  />
 
-                  <div className="mt-4 flex flex-wrap items-center gap-2">
-                    <span className="rounded-md bg-surface-2 px-2 py-0.5 font-mono text-[11px] text-muted tabular">
-                      {count === null
-                        ? "…"
-                        : `${formatNumber(count)} article${count > 1 ? "s" : ""}`}
-                    </span>
-                    {company.logoUrl ? null : (
-                      <span className="rounded-md bg-surface-2 px-2 py-0.5 text-[11px] text-muted">
-                        sans logo
+                  <div className="flex flex-1 flex-col p-4 pt-0 sm:p-5 sm:pt-0">
+                    {/* Le logo chevauche le bandeau, comme une fiche d'identité. */}
+                    <CompanyLogo
+                      company={company}
+                      className="-mt-7 size-14 border-4 border-surface text-base shadow-sm"
+                    />
+
+                    <p className="mt-3 truncate text-[15px] font-semibold tracking-tight transition-colors group-hover:text-accent">
+                      {company.name}
+                    </p>
+                    <p className="truncate font-mono text-[11px] text-muted">
+                      {company.code}
+                    </p>
+
+                    <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-3">
+                      <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-muted tabular">
+                        <FileText className="size-3.5" />
+                        {count === null
+                          ? "…"
+                          : `${formatNumber(count)} article${count > 1 ? "s" : ""}`}
                       </span>
-                    )}
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted transition-colors group-hover:text-accent">
+                        Ouvrir
+                        <ArrowUpRight className="size-3.5" />
+                      </span>
+                    </div>
                   </div>
                 </Link>
               </li>
