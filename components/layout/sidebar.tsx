@@ -44,14 +44,6 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                       )}
                     />
                     <span className="truncate">{item.label}</span>
-                    {item.planned ? (
-                      <span
-                        className="ml-auto shrink-0 rounded border border-border px-1 py-0.5 text-[9px] font-medium uppercase tracking-wide text-muted"
-                        title="Aucun endpoint côté API pour l'instant"
-                      >
-                        à venir
-                      </span>
-                    ) : null}
                   </Link>
                 </li>
               );

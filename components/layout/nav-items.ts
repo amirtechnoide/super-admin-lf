@@ -2,10 +2,7 @@ import type { ComponentType } from "react";
 import {
   Building2,
   FileText,
-  FolderTree,
-  Image,
   LayoutDashboard,
-  MessageSquare,
   Settings,
   User,
 } from "lucide-react";
@@ -16,8 +13,6 @@ export interface NavItem {
   icon: ComponentType<{ className?: string }>;
   /** Correspondance exacte (sinon on teste le préfixe). */
   exact?: boolean;
-  /** Module sans endpoint côté API — signalé dans la navigation. */
-  planned?: boolean;
 }
 
 export interface NavSection {
@@ -25,32 +20,17 @@ export interface NavSection {
   items: NavItem[];
 }
 
-/** Un seul rôle : la navigation est identique partout, sans condition. */
+/**
+ * Un seul rôle : la navigation est identique partout, sans condition. Elle ne
+ * liste que ce que l'API sait faire — pas d'entrée qui mène nulle part.
+ */
 export const NAV_SECTIONS: NavSection[] = [
   {
-    label: "Pilotage",
+    label: "Espace de travail",
     items: [
       { href: "/", label: "Vue d'ensemble", icon: LayoutDashboard, exact: true },
-      { href: "/companies", label: "Entreprises", icon: Building2 },
-    ],
-  },
-  {
-    label: "Contenu",
-    items: [
       { href: "/posts", label: "Articles", icon: FileText },
-      {
-        href: "/categories",
-        label: "Catégories & tags",
-        icon: FolderTree,
-        planned: true,
-      },
-      { href: "/media", label: "Médias", icon: Image, planned: true },
-      {
-        href: "/comments",
-        label: "Commentaires",
-        icon: MessageSquare,
-        planned: true,
-      },
+      { href: "/companies", label: "Entreprises", icon: Building2 },
     ],
   },
   {
