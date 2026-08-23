@@ -87,6 +87,28 @@ et la liste des routes attendues, plutôt que des données inventées.
 - `logoUrl` vaut parfois la chaîne littérale `"string"` dans les données
   existantes : le schéma Zod la normalise en `null`.
 
+## Pourquoi le dashboard passe par un relais
+
+Le backend **rejette par un 403 toute requête portant un en-tête `Origin` qui
+n'est pas le sien**. Vérifié avec trois requêtes strictement identiques :
+
+| `Origin` envoyé | Réponse de `POST /auth/login` |
+| --- | --- |
+| aucun (curl, appel serveur) | `200` |
+| `https://sogafric-backend.lf-company.com` (Swagger UI) | `200` |
+| `http://localhost:3000` (le dashboard) | `403` |
+
+C'est pourquoi Swagger fonctionne — il est servi par le backend lui-même, donc
+même origine — alors que le dashboard échoue. Un `rewrite` Next ne suffit pas :
+il retransmet l'`Origin` du navigateur tel quel. Le relais est donc un **route
+handler** (`app/api/backend/[...path]/route.ts`) qui retire `Origin` et
+`Referer`, relaie le corps en flux (indispensable pour les envois multipart) et
+renvoie la réponse inchangée.
+
+**Le jour où le CORS du backend acceptera l'origine du dashboard**, il suffira
+de pointer `NEXT_PUBLIC_API_BASE_URL` sur l'URL absolue : le relais ne sera plus
+sollicité et le dossier `app/api/backend/` pourra être supprimé.
+
 ## Exposition publique constatée
 
 `GET /posts` et `GET /stats` répondent **200 sans jeton** ; `GET /companies` et
