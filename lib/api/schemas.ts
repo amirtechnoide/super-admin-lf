@@ -108,7 +108,7 @@ export const postListSchema = z.array(postSchema);
 /**
  * Le backend attend `title`, `content`, `excerpt`… en **paramètres de requête**
  * et non dans le corps. L'URL complète doit rester sous la limite d'en-tête
- * HTTP de Tomcat (8 Ko), d'où le plafond sur le contenu — vérifié en conditions
+ * HTTP de Tomcat (8 Ko), d'où le plafond sur le contenu, vérifié en conditions
  * réelles : 6 000 caractères passent, 8 000 renvoient une 400.
  */
 export const MAX_CONTENT_LENGTH = 6000;

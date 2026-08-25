@@ -14,8 +14,8 @@ export interface PostListParams {
 
 /**
  * `GET /posts` ne pagine plus et ne trie plus : il renvoie l'intégralité des
- * articles du périmètre demandé. On impose donc un ordre stable ici — le plus
- * récent d'abord — pour que l'affichage ne dépende pas de l'ordre de la base.
+ * articles du périmètre demandé. On impose donc un ordre stable ici, le plus
+ * récent d'abord, pour que l'affichage ne dépende pas de l'ordre de la base.
  */
 export async function getPosts({
   companyId,

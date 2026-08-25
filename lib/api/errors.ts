@@ -55,7 +55,7 @@ export function toApiError(error: unknown): ApiError {
       case 400:
         return new ApiError(
           backendMessage ??
-            "Requête refusée par le serveur. Vérifiez les champs saisis — un contenu trop long est la cause la plus fréquente.",
+            "Requête refusée par le serveur. Vérifiez les champs saisis, un contenu trop long est la cause la plus fréquente.",
           status,
           error
         );

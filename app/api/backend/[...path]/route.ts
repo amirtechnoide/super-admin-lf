@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server";
  * Relais vers le backend Spring.
  *
  * Le backend renvoie **403 à toute requête portant un en-tête `Origin` qui
- * n'est pas le sien** — vérifié : requête identique, 200 sans `Origin`, 200
+ * n'est pas le sien**. Vérifié : requête identique, 200 sans `Origin`, 200
  * avec l'origine du backend (le cas de Swagger), 403 avec
  * `http://localhost:3000`. Un simple `rewrite` Next ne suffit pas : il
  * retransmet l'`Origin` du navigateur tel quel. Ce handler le retire, ce qui

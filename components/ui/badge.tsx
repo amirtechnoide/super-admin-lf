@@ -31,7 +31,7 @@ export function Badge({ className, tone, ...props }: BadgeProps) {
 }
 
 /**
- * Badge de statut d'article — l'API n'expose que DRAFT et PUBLISHED.
+ * Badge de statut d'article, l'API n'expose que DRAFT et PUBLISHED.
  * Le vert dit « en ligne », l'ambre « pas encore » : la couleur porte
  * l'information, indépendamment de l'accent de l'entreprise.
  */

@@ -48,7 +48,7 @@ export function formatDate(iso?: string): string {
   return DATE_FMT.format(parseApiDate(iso));
 }
 
-/** « il y a 3 jours » — sans dépendance de locale supplémentaire. */
+/** « il y a 3 jours », sans dépendance de locale supplémentaire. */
 export function formatRelative(iso: string, now: Date = new Date()): string {
   const diff = now.getTime() - parseApiDate(iso).getTime();
   const minutes = Math.round(diff / 60000);
@@ -83,7 +83,7 @@ export function estimateReadingTime(html: string): number {
   return Math.max(1, Math.round(words / 200));
 }
 
-/** Noir ou blanc selon la luminance — pour du texte posé sur l'accent. */
+/** Noir ou blanc selon la luminance, pour du texte posé sur l'accent. */
 export function contrastOn(hex: string): "#ffffff" | "#17171a" {
   const clean = hex.replace("#", "");
   const full =

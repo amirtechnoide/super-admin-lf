@@ -7,25 +7,28 @@ import { Button } from "./button";
 
 /**
  * Aperçu d'une image avant envoi. Un fichier local est affiché via une URL
- * d'objet — révoquée dès qu'il change, sinon le navigateur garde le blob en
- * mémoire — et une image déjà stockée via son URL distante.
+ * d'objet (révoquée dès qu'il change, sinon le navigateur garde le blob en
+ * mémoire) et une image déjà stockée via son URL distante.
  */
 export function ImagePreview({
   file,
   url,
   onRemove,
   aspect = "aspect-[16/9]",
+  fit = "cover",
   className,
 }: {
   file?: File | null;
   url?: string | null;
   onRemove?: () => void;
   aspect?: string;
+  /** `cover` pour une photo qui remplit le cadre, `contain` pour un logo. */
+  fit?: "cover" | "contain";
   className?: string;
 }) {
   const [failed, setFailed] = React.useState(false);
   // L'URL d'objet est gardée avec le fichier dont elle vient : sinon celle du
-  // fichier précédent — déjà révoquée — servirait de source le temps d'un rendu.
+  // fichier précédent, déjà révoquée, servirait de source le temps d'un rendu.
   const [blob, setBlob] = React.useState<{ file: File; url: string } | null>(
     null
   );
@@ -88,7 +91,11 @@ export function ImagePreview({
           src={source}
           alt=""
           onError={() => setFailed(true)}
-          className={cn("w-full object-cover", aspect)}
+          className={cn(
+            "w-full",
+            fit === "contain" ? "object-contain p-3" : "object-cover",
+            aspect
+          )}
         />
       )}
 

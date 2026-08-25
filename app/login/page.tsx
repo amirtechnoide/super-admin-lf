@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth/auth-store";
 import { LoginForm } from "@/components/auth/login-form";
-import { ResetPasswordDialog } from "@/components/auth/reset-password-dialog";
 
 /** Accent propre à l'écran de connexion : aucune entreprise n'est encore active. */
 const BRAND_ACCENT = "#2F5BEA";
@@ -19,7 +18,6 @@ const HIGHLIGHTS = [
 export default function LoginPage() {
   const router = useRouter();
   const status = useAuthStore((s) => s.status);
-  const [resetOpen, setResetOpen] = React.useState(false);
 
   // Un admin déjà connecté n'a rien à faire sur cet écran.
   React.useEffect(() => {
@@ -36,7 +34,7 @@ export default function LoginPage() {
         } as React.CSSProperties
       }
     >
-      {/* Panneau de marque — masqué sous lg pour laisser la place au formulaire. */}
+      {/* Panneau de marque, masqué sous lg pour laisser la place au formulaire. */}
       <aside className="relative hidden overflow-hidden bg-[#0E1220] p-10 text-white lg:flex lg:flex-col lg:justify-between">
         <div
           aria-hidden
@@ -123,12 +121,27 @@ export default function LoginPage() {
             className="animate-rise"
             style={{ animationDelay: "60ms" }}
           >
-            <LoginForm onForgotPassword={() => setResetOpen(true)} />
+            <LoginForm />
           </div>
+
+          {/* Signature de l'agence. Elle est sous le formulaire, seule
+              colonne visible à toutes les tailles d'écran. */}
+          <p
+            className="animate-rise mt-8 text-center text-[12px] text-muted"
+            style={{ animationDelay: "120ms" }}
+          >
+            Créé par{" "}
+            <a
+              href="https://lf-company.com"
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-text underline-offset-4 transition-colors hover:text-accent hover:underline"
+            >
+              LF COMPANY
+            </a>
+          </p>
         </div>
       </main>
-
-      <ResetPasswordDialog open={resetOpen} onOpenChange={setResetOpen} />
     </div>
   );
 }

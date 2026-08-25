@@ -13,7 +13,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-/** Pastille de couleur de l'entreprise — le repère visuel du multi-tenant. */
+/** Pastille de couleur de l'entreprise, le repère visuel du multi-tenant. */
 export function CompanyDot({
   company,
   className,
@@ -195,7 +195,9 @@ export function CompanyLogo({
         alt=""
         onError={() => setFailed(true)}
         className={cn(
-          "shrink-0 rounded-lg border border-border object-cover",
+          // `contain` et non `cover` : un logo est rarement carré, et le
+          // recadrage lui coupait ses bords. Le fond neutre tient le cadre.
+          "shrink-0 rounded-lg border border-border bg-surface object-contain p-1",
           className
         )}
       />

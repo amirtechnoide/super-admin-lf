@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-/** Indicateur d'attente — hérite de la couleur du texte parent. */
+/** Indicateur d'attente, hérite de la couleur du texte parent. */
 export function Spinner({ className }: { className?: string }) {
   return (
     <span

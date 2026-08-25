@@ -304,7 +304,7 @@ export default function PostsPage() {
             description={
               query
                 ? `Aucun résultat pour « ${query.trim()} ». Essayez un autre terme.`
-                : "Créez le premier article — il apparaîtra immédiatement dans cette liste."
+                : "Créez le premier article, il apparaîtra immédiatement dans cette liste."
             }
             action={
               query ? (

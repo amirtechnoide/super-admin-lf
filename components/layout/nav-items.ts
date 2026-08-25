@@ -22,7 +22,7 @@ export interface NavSection {
 
 /**
  * Un seul rôle : la navigation est identique partout, sans condition. Elle ne
- * liste que ce que l'API sait faire — pas d'entrée qui mène nulle part.
+ * liste que ce que l'API sait faire, pas d'entrée qui mène nulle part.
  */
 export const NAV_SECTIONS: NavSection[] = [
   {

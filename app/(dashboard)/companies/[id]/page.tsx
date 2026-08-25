@@ -11,7 +11,7 @@ import { usePosts } from "@/lib/queries/use-posts";
 import { useStats } from "@/lib/queries/use-stats";
 import { useAppStore } from "@/lib/store/app-store";
 import { ApiError } from "@/lib/api/errors";
-import { accentForCompany } from "@/lib/theme/company-accent";
+import { accentForCompany, hasBrandAccent } from "@/lib/theme/company-accent";
 import { formatDate, formatNumber } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,7 +41,7 @@ export default function CompanyDetailPage({
   const [editOpen, setEditOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
 
-  const company = companies.data?.find((c) => c.id === companyId) ?? null;
+  const company = companies.data?.find((c: any) => c.id === companyId) ?? null;
 
   const posts = usePosts({
     companyId: Number.isFinite(companyId) ? companyId : null,
@@ -50,7 +50,7 @@ export default function CompanyDetailPage({
   const latestPosts = (posts.data ?? []).slice(0, 5);
 
   const postCount =
-    stats.data?.postsPerCompany.find((r) => r.companyName === company?.name)
+    stats.data?.postsPerCompany.find((r: any) => r.companyName === company?.name)
       ?.postCount ?? 0;
 
   async function handleDelete() {
@@ -210,9 +210,9 @@ export default function CompanyDetailPage({
               </span>
             </div>
             <p className="text-xs leading-relaxed text-muted">
-              L&apos;API ne stocke pas de couleur : cet accent est dérivé du code
-              de l&apos;entreprise, donc identique sur tous les postes. Il teinte
-              le dashboard quand cette entreprise est active.
+              {hasBrandAccent(company)
+                ? "L'API ne stocke pas de couleur : c'est la couleur de marque associée au code de l'entreprise. Elle teinte le dashboard quand cette entreprise est active."
+                : "L'API ne stocke pas de couleur : cet accent est dérivé du code de l'entreprise, donc identique sur tous les postes. Il teinte le dashboard quand cette entreprise est active."}
             </p>
           </CardContent>
         </Card>
@@ -250,7 +250,7 @@ export default function CompanyDetailPage({
           />
         ) : (
           <ul className="divide-y divide-border">
-            {latestPosts.map((post) => (
+            {latestPosts.map((post: any) => (
               <li key={post.id}>
                 <Link
                   href={`/posts/${post.id}/edit`}

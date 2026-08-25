@@ -26,7 +26,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-/** Création et édition d'entreprise — le logo part en multipart. */
+/** Création et édition d'entreprise, le logo part en multipart. */
 export function CompanyFormDialog({
   open,
   onOpenChange,
@@ -135,6 +135,7 @@ export function CompanyFormDialog({
                     file={logo}
                     url={logoUrl || null}
                     aspect="aspect-[3/1]"
+                    fit="contain"
                     onRemove={() => {
                       // Un fichier choisi prime sur l'URL : on le retire d'abord.
                       if (logo) setLogo(null);

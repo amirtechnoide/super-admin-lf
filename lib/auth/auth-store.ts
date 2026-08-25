@@ -5,7 +5,7 @@ import { create } from "zustand";
 const TOKEN_KEY = "sogafric.token";
 const REFRESH_KEY = "sogafric.refreshToken";
 
-/** Lit le champ `sub` du JWT — le backend y place l'e-mail de l'admin. */
+/** Lit le champ `sub` du JWT, le backend y place l'e-mail de l'admin. */
 function readEmailFromToken(token: string | null): string | null {
   if (!token) return null;
   try {
@@ -73,7 +73,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 }));
 
-/* Accès hors composants React — utilisé par les intercepteurs axios. */
+/* Accès hors composants React, utilisé par les intercepteurs axios. */
 export const authStorage = {
   getToken: () => useAuthStore.getState().token,
   getRefreshToken: () => useAuthStore.getState().refreshToken,

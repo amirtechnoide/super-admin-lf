@@ -1,6 +1,6 @@
 import type { PostListParams } from "@/lib/api/posts";
 
-/** Fabrique de clés de cache — une seule source de vérité pour l'invalidation. */
+/** Fabrique de clés de cache, une seule source de vérité pour l'invalidation. */
 export const queryKeys = {
   companies: {
     all: ["companies"] as const,

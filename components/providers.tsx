@@ -44,7 +44,7 @@ function AccentProvider({ children }: { children: React.ReactNode }) {
     enabled: status === "authenticated",
   });
 
-  const company = companies?.find((c) => c.id === activeCompanyId) ?? null;
+  const company = companies?.find((c: any) => c.id === activeCompanyId) ?? null;
   const accent = company ? accentForCompany(company) : NEUTRAL_ACCENT;
 
   React.useEffect(() => {

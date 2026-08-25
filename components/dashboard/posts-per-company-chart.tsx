@@ -10,7 +10,7 @@ interface Row {
 }
 
 /**
- * Répartition des articles par entreprise — barres horizontales alimentées par
+ * Répartition des articles par entreprise, barres horizontales alimentées par
  * `/stats`. Pas de librairie de charts : la donnée est un simple classement.
  */
 export function PostsPerCompanyChart({ rows }: { rows: Row[] }) {

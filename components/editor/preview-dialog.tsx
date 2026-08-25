@@ -109,7 +109,7 @@ export function PreviewDialog({
               </span>
               {status === "DRAFT" ? (
                 <span className="text-warning">
-                  {POST_STATUS_LABELS.DRAFT} — non visible sur le blog
+                  {POST_STATUS_LABELS.DRAFT}, non visible sur le blog
                 </span>
               ) : null}
             </div>

@@ -56,7 +56,7 @@ export default function OverviewPage() {
         description={
           aggregated
             ? "Chiffres agrégés sur l'ensemble des entreprises."
-            : `Derniers articles de ${activeCompany?.name ?? "…"} — les compteurs restent globaux.`
+            : `Derniers articles de ${activeCompany?.name ?? "…"}, les compteurs restent globaux.`
         }
         actions={
           <Button asChild>
@@ -185,7 +185,7 @@ export default function OverviewPage() {
           <EmptyState
             icon={FileText}
             title="Aucun article pour l'instant"
-            description="Créez le premier article — il apparaîtra immédiatement ici."
+            description="Créez le premier article, il apparaîtra immédiatement ici."
             action={
               <Button asChild>
                 <Link href="/posts/new">

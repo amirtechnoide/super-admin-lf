@@ -65,11 +65,7 @@ function TextField({
   );
 }
 
-export function LoginForm({
-  onForgotPassword,
-}: {
-  onForgotPassword: () => void;
-}) {
+export function LoginForm() {
   const router = useRouter();
   const setSession = useAuthStore((s) => s.setSession);
   const [showPassword, setShowPassword] = React.useState(false);
@@ -143,16 +139,6 @@ export function LoginForm({
         {...form.register("password")}
       />
 
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={onForgotPassword}
-          className="text-[13px] text-muted underline-offset-4 transition-colors hover:text-text hover:underline"
-        >
-          Mot de passe oublié
-        </button>
-      </div>
-
       <Button
         type="submit"
         size="lg"
@@ -171,6 +157,13 @@ export function LoginForm({
           </>
         )}
       </Button>
+
+      {/* Aucune réinitialisation en libre-service : le mot de passe est changé
+          par l'équipe technique, à la demande. */}
+      <p className="text-center text-xs leading-relaxed text-muted">
+        Mot de passe oublié ? Contactez l&apos;équipe technique, elle vous en
+        attribuera un nouveau.
+      </p>
     </form>
   );
 }

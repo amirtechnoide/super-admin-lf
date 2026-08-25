@@ -3,9 +3,12 @@
 import * as React from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
+import { toast } from "sonner";
 import {
   Building2,
+  Check,
   CircleCheck,
+  Copy,
   Eye,
   FileText,
   Monitor,
@@ -17,10 +20,12 @@ import {
 import { useMounted } from "@/lib/hooks/use-mounted";
 import { useStats } from "@/lib/queries/use-stats";
 import { MAX_CONTENT_LENGTH } from "@/lib/api/schemas";
+import { REFERENCE_COMPANIES } from "@/lib/theme/company-accent";
 import { cn, formatNumber } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 const THEMES = [
   { value: "light", label: "Clair", icon: Sun },
@@ -33,7 +38,7 @@ const STEPS = [
   {
     icon: Building2,
     title: "Choisir l'entreprise",
-    body: "En haut de l'écran, le sélecteur indique sur quelle entreprise vous travaillez. Tout ce que vous voyez ensuite — articles, chiffres — ne concerne qu'elle. L'option « Toutes les entreprises » affiche l'ensemble.",
+    body: "En haut de l'écran, le sélecteur indique sur quelle entreprise vous travaillez. Tout ce que vous voyez ensuite (articles, chiffres) ne concerne qu'elle. L'option « Toutes les entreprises » affiche l'ensemble.",
   },
   {
     icon: PenSquare,
@@ -56,6 +61,57 @@ const STEPS = [
     body: "L'écran « Articles » liste tout. Basculez entre l'affichage en cartes et en tableau, filtrez par statut ou tapez quelques mots pour retrouver un article. Un clic dessus l'ouvre pour le modifier.",
   },
 ];
+
+/** Une entreprise de référence : sa couleur, son nom, son code à recopier. */
+function ReferenceCompanyRow({
+  company,
+}: {
+  company: (typeof REFERENCE_COMPANIES)[number];
+}) {
+  const [copied, setCopied] = React.useState(false);
+
+  // Le retour visuel s'efface seul ; le minuteur part avec le composant.
+  React.useEffect(() => {
+    if (!copied) return;
+    const timer = window.setTimeout(() => setCopied(false), 1600);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(company.code);
+      setCopied(true);
+    } catch {
+      // Presse-papiers refusé (contexte non sécurisé) : le code reste lisible
+      // et sélectionnable à l'écran, on le rappelle simplement.
+      toast.error(`Copie impossible. Le code est : ${company.code}`);
+    }
+  }
+
+  return (
+    <li className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+      <span
+        aria-hidden
+        className="size-3 shrink-0 rounded-full"
+        style={{ backgroundColor: company.accent }}
+      />
+      <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
+        {company.name}
+      </span>
+      <code className="shrink-0 rounded-md bg-surface-2 px-2 py-1 font-mono text-[12px]">
+        {company.code}
+      </code>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={copy}
+        aria-label={`Copier le code de ${company.name}`}
+      >
+        {copied ? <Check className="text-success" /> : <Copy />}
+      </Button>
+    </li>
+  );
+}
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -157,6 +213,34 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Codes des entreprises</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-[13px] leading-relaxed text-muted">
+            Si une de ces quatre entreprises doit être recréée, saisissez son
+            code <strong className="font-medium text-text">exactement</strong>{" "}
+            comme indiqué ci-dessous, à la lettre près. C&apos;est ce code, et
+            lui seul, qui rend à l&apos;entreprise sa couleur dans le tableau de
+            bord. Un code différent donnera une entreprise qui fonctionne, mais
+            avec une couleur quelconque.
+          </p>
+
+          <ul className="mt-3 divide-y divide-border">
+            {REFERENCE_COMPANIES.map((company) => (
+              <ReferenceCompanyRow key={company.code} company={company} />
+            ))}
+          </ul>
+
+          <p className="mt-3 text-xs leading-relaxed text-muted">
+            Le nom, lui, reste modifiable à tout moment sans conséquence. Les
+            entreprises ajoutées en dehors de cette liste reçoivent
+            automatiquement une couleur, il n&apos;y a rien à saisir.
+          </p>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

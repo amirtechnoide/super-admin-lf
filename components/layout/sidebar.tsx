@@ -97,7 +97,7 @@ function Wordmark() {
   );
 }
 
-/** Sidebar fixe — desktop uniquement (le drawer mobile réutilise le contenu). */
+/** Sidebar fixe, desktop uniquement (le drawer mobile réutilise le contenu). */
 export function Sidebar() {
   return (
     <aside className="hidden md:flex fixed inset-y-0 left-0 z-30 w-[248px] flex-col border-r border-border bg-surface">

@@ -202,7 +202,7 @@ export function PostEditor({ post }: { post?: Post }) {
   }
 
   /* ---------------------------------------------------------------------- */
-  /* Panneaux de réglages — mêmes sections, deux mises en page.              */
+  /* Panneaux de réglages : mêmes sections, deux mises en page.              */
   /* ---------------------------------------------------------------------- */
 
   const publicationPanel = (idPrefix: string) => (
