@@ -20,9 +20,10 @@
   --text: #17171a;
   --muted: #6b6b72;
 
-  /* Remplacé à chaud par le site actif */
-  --accent: #52525b;
-  --accent-contrast: #ffffff;
+  /* Remplacé à chaud par le site actif. Valeur par défaut = accent neutre,
+     celui de la vue « Toutes les entreprises » (NEUTRAL_ACCENT). */
+  --accent: #0095da;
+  --accent-contrast: #17171a;
   --accent-soft: color-mix(in oklab, var(--accent) 10%, transparent);
   --accent-softer: color-mix(in oklab, var(--accent) 6%, transparent);
 

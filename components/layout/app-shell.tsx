@@ -5,7 +5,7 @@ import { Topbar } from "./topbar";
 /** Sidebar fixe (desktop) + topbar collante + zone de contenu. */
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-dvh md:pl-[248px]">
+    <div className="min-h-dvh md:pl-62">
       <Sidebar />
       <div className="flex min-h-dvh min-w-0 flex-col">
         <Topbar />

@@ -51,8 +51,8 @@ const PALETTE = [
   "#1F6F5C",
 ];
 
-/** Accent neutre : vue « Toutes les entreprises », ou aucune sélection. */
-export const NEUTRAL_ACCENT = "#52525B";
+/** Accent par défaut : vue « Toutes les entreprises », ou aucune sélection. */
+export const NEUTRAL_ACCENT = "#0095DA";
 
 export function accentForCompany(
   company?: { id: number; code: string } | null
