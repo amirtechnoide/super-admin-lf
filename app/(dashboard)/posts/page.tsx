@@ -12,6 +12,7 @@ import {
   List,
   MoreHorizontal,
   PenSquare,
+  RefreshCw,
   Search,
   Send,
   SquarePen,
@@ -260,6 +261,22 @@ export default function PostsPage() {
                 <SelectItem value="DRAFT">{POST_STATUS_LABELS.DRAFT}</SelectItem>
               </SelectContent>
             </Select>
+
+            {/* Les articles peuvent bouger depuis un autre poste : ce bouton
+                relit la liste sans recharger la page. `isFetching` et non
+                `isPending`, pour que l'icône tourne aussi quand des données
+                déjà affichées sont en cours de rafraîchissement. */}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => posts.refetch()}
+              disabled={posts.isFetching}
+              aria-label="Actualiser la liste"
+              title="Actualiser la liste"
+              className="shrink-0"
+            >
+              <RefreshCw className={cn(posts.isFetching && "animate-spin")} />
+            </Button>
 
             {/* Bascule cartes / tableau, mémorisée entre les sessions. */}
             <div

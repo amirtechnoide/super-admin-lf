@@ -3,6 +3,7 @@
 import * as React from "react";
 import { ImageOff, X } from "lucide-react";
 import { cn, formatBytes } from "@/lib/utils";
+import { useObjectUrl } from "@/lib/hooks/use-object-url";
 import { Button } from "./button";
 
 /**
@@ -27,23 +28,9 @@ export function ImagePreview({
   className?: string;
 }) {
   const [failed, setFailed] = React.useState(false);
-  // L'URL d'objet est gardée avec le fichier dont elle vient : sinon celle du
-  // fichier précédent, déjà révoquée, servirait de source le temps d'un rendu.
-  const [blob, setBlob] = React.useState<{ file: File; url: string } | null>(
-    null
-  );
+  const objectUrl = useObjectUrl(file);
 
-  React.useEffect(() => {
-    if (!file) return;
-    const created = URL.createObjectURL(file);
-    // Le blob doit vivre et mourir avec l'effet : créé au rendu, il serait
-    // révoqué par le cleanup simulé de StrictMode sans jamais être recréé.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setBlob({ file, url: created });
-    return () => URL.revokeObjectURL(created);
-  }, [file]);
-
-  const source = file ? (blob?.file === file ? blob.url : null) : url ?? null;
+  const source = file ? objectUrl : url ?? null;
 
   // Nouvelle source = nouvel essai de chargement, ajusté pendant le rendu.
   const [lastSource, setLastSource] = React.useState(source);

@@ -6,6 +6,7 @@ import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import {
   Building2,
+  CalendarClock,
   Check,
   CircleCheck,
   Copy,
@@ -53,12 +54,17 @@ const STEPS = [
   {
     icon: Send,
     title: "Enregistrer ou publier",
-    body: "Dans le panneau « Publication », le statut « Brouillon » garde l'article pour vous seule ; « Publié » le met en ligne. Le bouton en bas change de nom selon votre choix, il dit toujours ce qu'il va faire.",
+    body: "Dans le panneau « Publication », le statut « Brouillon » garde l'article pour vous seule ; « Publié » le met en ligne tout de suite, à la date et à l'heure du jour. Il n'y a donc aucune date à saisir pour publier. Le bouton en bas change de nom selon votre choix, il dit toujours ce qu'il va faire.",
+  },
+  {
+    icon: CalendarClock,
+    title: "Préparer un article pour plus tard",
+    body: "Pour qu'un article ne paraisse pas tout de suite, laissez le statut sur « Brouillon » et renseignez « Planifier la mise en ligne ». Une date déjà passée est refusée. L'article porte alors la mention « Planifié » et sa date dans la liste, ce qui le distingue d'un brouillon simplement mis de côté. Il reste invisible sur le blog jusque-là.",
   },
   {
     icon: FileText,
     title: "Retrouver et modifier",
-    body: "L'écran « Articles » liste tout. Basculez entre l'affichage en cartes et en tableau, filtrez par statut ou tapez quelques mots pour retrouver un article. Un clic dessus l'ouvre pour le modifier.",
+    body: "L'écran « Articles » liste tout. Basculez entre l'affichage en cartes et en tableau, filtrez par statut ou tapez quelques mots pour retrouver un article. Le bouton aux flèches circulaires relit la liste, utile si quelqu'un a travaillé dessus depuis un autre poste. Un clic sur un article l'ouvre pour le modifier.",
   },
 ];
 
@@ -287,6 +293,11 @@ export default function SettingsPage() {
               <li>
                 Une suppression est définitive : une fenêtre vous demande
                 toujours confirmation avant.
+              </li>
+              <li>
+                Publier un article planifié depuis la liste le met en ligne
+                immédiatement et annule sa date prévue. Un message vous le
+                confirme.
               </li>
               <li>
                 Pour changer votre mot de passe, allez dans{" "}

@@ -12,6 +12,7 @@ import {
   useUpdatePost,
 } from "@/lib/queries/use-posts";
 import { useAppStore } from "@/lib/store/app-store";
+import { useObjectUrl } from "@/lib/hooks/use-object-url";
 import {
   MAX_CONTENT_LENGTH,
   POST_STATUS_LABELS,
@@ -76,16 +77,20 @@ function initialState(post: Post | undefined, fallbackCompanyId: number | null):
   };
 }
 
-/** Le bouton principal dit exactement l'action réalisée. */
-const PRIMARY_LABEL: Record<PostStatus, string> = {
-  DRAFT: "Enregistrer le brouillon",
-  PUBLISHED: "Publier",
-};
+/**
+ * Le bouton principal dit exactement l'action réalisée. Un brouillon daté n'est
+ * pas rangé de côté, il est programmé : le dire « Enregistrer le brouillon »
+ * masquerait la seule chose qui distingue les deux gestes.
+ */
+function primaryLabel(status: PostStatus, scheduling: boolean): string {
+  if (status === "PUBLISHED") return "Publier";
+  return scheduling ? "Planifier l'article" : "Enregistrer le brouillon";
+}
 
-const SUCCESS_TOAST: Record<PostStatus, string> = {
-  DRAFT: "Brouillon enregistré",
-  PUBLISHED: "Article publié",
-};
+function successToast(status: PostStatus, scheduling: boolean): string {
+  if (status === "PUBLISHED") return "Article publié";
+  return scheduling ? "Article planifié" : "Brouillon enregistré";
+}
 
 export function PostEditor({ post }: { post?: Post }) {
   const router = useRouter();
@@ -122,6 +127,17 @@ export function PostEditor({ post }: { post?: Post }) {
   // passée, reste acceptée : on ne ferme la porte qu'aux saisies neuves, sinon
   // rouvrir un vieil article pour corriger une faute deviendrait impossible
   // sans toucher à sa date.
+  // Planifier, c'est un brouillon portant une date à venir. L'état sert au
+  // libellé du bouton comme au message de confirmation.
+  const scheduling =
+    form.status === "DRAFT" &&
+    Boolean(form.publishedAt) &&
+    isFutureServerDateTime(form.publishedAt);
+
+  // L'aperçu doit montrer le fichier que l'admin vient de joindre, pas encore
+  // envoyé au serveur, et qui prime donc sur l'URL déjà enregistrée.
+  const coverPreviewUrl = useObjectUrl(coverFile);
+
   const initialPublishedAt = toDatetimeLocal(post?.publishedAt);
   const publishedAtMin =
     initialPublishedAt && initialPublishedAt < nowDatetimeLocal()
@@ -200,7 +216,7 @@ export function PostEditor({ post }: { post?: Post }) {
       if (activeCompanyId && activeCompanyId !== parsed.data.companyId) {
         setActiveCompany(parsed.data.companyId);
       }
-      toast.success(SUCCESS_TOAST[parsed.data.status]);
+      toast.success(successToast(parsed.data.status, scheduling));
 
       // À la création, on renvoie vers la liste : l'article y est visible
       // immédiatement, ce qui vaut mieux que rester sur un formulaire vidé.
@@ -465,7 +481,9 @@ export function PostEditor({ post }: { post?: Post }) {
             Aperçu
           </Button>
           <Button onClick={save} disabled={pending}>
-            {pending ? "Enregistrement…" : PRIMARY_LABEL[form.status]}
+            {pending
+              ? "Enregistrement…"
+              : primaryLabel(form.status, scheduling)}
           </Button>
         </div>
       </div>
@@ -581,7 +599,7 @@ export function PostEditor({ post }: { post?: Post }) {
           Aperçu
         </Button>
         <Button className="flex-1" onClick={save} disabled={pending}>
-          {pending ? "…" : PRIMARY_LABEL[form.status]}
+          {pending ? "…" : primaryLabel(form.status, scheduling)}
         </Button>
       </div>
 
@@ -591,7 +609,9 @@ export function PostEditor({ post }: { post?: Post }) {
         title={form.title}
         excerpt={form.excerpt}
         content={form.content}
-        coverImage={form.coverImageUrl || undefined}
+        coverImage={
+          coverFile ? coverPreviewUrl ?? undefined : form.coverImageUrl || undefined
+        }
         readingTime={readingTime}
         companyName={company?.name ?? "—"}
         status={form.status}

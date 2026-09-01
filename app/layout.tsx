@@ -22,9 +22,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Studio Blog, administration",
+  title: "Studio Blog, Dashboard",
   description:
-    "Dashboard multi-tenant pour gérer les blogs des sites clients depuis une interface unique.",
+    "Dashboard pour gérer les actualités des sites clients depuis une interface unique.",
 };
 
 export const viewport: Viewport = {
