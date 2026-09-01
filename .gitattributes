@@ -1,0 +1,4 @@
+# Les crochets Git sont exécutés par `sh`, qui refuse un script terminé en
+# CRLF ("bad interpreter"). `core.autocrlf` étant à true sur les postes
+# Windows, il faut forcer les fins de ligne Unix pour ce dossier.
+.githooks/** text eol=lf
