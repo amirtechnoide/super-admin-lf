@@ -28,9 +28,12 @@ import {
 import { ApiError } from "@/lib/api/errors";
 import {
   cn,
-  formatDate,
+  formatDateTime,
   formatRelative,
+  fromDatetimeLocal,
   isScheduledPost,
+  nowDatetimeLocal,
+  postPublicationInfo,
 } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -132,9 +135,21 @@ export default function PostsPage() {
         status: next,
         companyId: post.company.id,
         coverImageUrl: post.coverImageUrl ?? undefined,
+        // Publier depuis la liste obéit à la même règle que l'éditeur : la mise
+        // en ligne se fait à la date du jour. Une date de planification est
+        // donc écrasée, et non conservée, sans quoi l'article partirait avec
+        // une date de parution à venir.
+        publishedAt:
+          next === "PUBLISHED"
+            ? fromDatetimeLocal(nowDatetimeLocal())
+            : undefined,
       });
       toast.success(
-        next === "PUBLISHED" ? "Article publié" : "Article repassé en brouillon"
+        next === "PUBLISHED"
+          ? isScheduledPost(post)
+            ? "Article publié maintenant, sa planification est annulée"
+            : "Article publié"
+          : "Article repassé en brouillon"
       );
     } catch (error) {
       toast.error(
@@ -343,7 +358,7 @@ export default function PostsPage() {
             <div className="hidden md:block overflow-x-auto scrollbar-thin">
               <table
                 className="w-full border-collapse text-sm"
-                style={{ minWidth: 920 }}
+                style={{ minWidth: 1010 }}
               >
                 <thead>
                   <tr className="border-b border-border">
@@ -403,7 +418,7 @@ export default function PostsPage() {
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-3 py-3 align-middle font-mono text-xs text-muted">
-                        {formatDate(post.createdAt)}
+                        {formatDateTime(post.createdAt)}
                       </td>
                       <td
                         className={cn(
@@ -411,7 +426,9 @@ export default function PostsPage() {
                           isScheduledPost(post) ? "text-info" : "text-muted"
                         )}
                       >
-                        {post.publishedAt ? formatDate(post.publishedAt) : "—"}
+                        {/* Pas de préfixe ici : la colonne Statut porte déjà
+                            le badge qui distingue planifié de publié. */}
+                        {formatDateTime(postPublicationInfo(post)?.date)}
                       </td>
                       <td
                         className="px-3 py-3 text-right align-middle"
@@ -458,7 +475,7 @@ export default function PostsPage() {
                         </span>
                         <span aria-hidden>·</span>
                         <span>Créé {formatRelative(post.createdAt)}</span>
-                        {post.publishedAt ? (
+                        {postPublicationInfo(post) ? (
                           <>
                             <span aria-hidden>·</span>
                             <span
@@ -467,7 +484,7 @@ export default function PostsPage() {
                               }
                             >
                               {isScheduledPost(post) ? "Planifié" : "Publié"} le{" "}
-                              {formatDate(post.publishedAt)}
+                              {formatDateTime(postPublicationInfo(post)?.date)}
                             </span>
                           </>
                         ) : null}

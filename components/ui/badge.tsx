@@ -36,10 +36,10 @@ export function Badge({ className, tone, ...props }: BadgeProps) {
  * Le vert dit « en ligne », l'ambre « pas encore » : la couleur porte
  * l'information, indépendamment de l'accent de l'entreprise.
  *
- * Un article planifié est publié au sens de l'API, mais sa date de mise en
- * ligne n'est pas encore atteinte. Le dire « Publié » serait faux : il reçoit
- * donc son propre badge, en bleu, pour ne pas se confondre avec ce qui est
- * réellement en ligne.
+ * Un article planifié est un brouillon dont la date de mise en ligne est à
+ * venir. Le dire « Brouillon » serait incomplet, puisqu'il partira tout seul :
+ * il reçoit donc son propre badge, en bleu, distinct du brouillon dormant
+ * comme de ce qui est déjà en ligne.
  */
 export function PostStatusBadge({
   status,

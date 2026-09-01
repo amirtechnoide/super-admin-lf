@@ -79,15 +79,32 @@ export function isPastServerDateTime(
 }
 
 /**
- * Un article planifié est publié, mais sa date de mise en ligne n'est pas
- * encore atteinte : il n'est donc pas visible sur le blog. L'API n'ayant que
- * deux statuts, cet état se déduit de la date.
+ * Un article planifié est un **brouillon** dont la date de mise en ligne est
+ * encore à venir. Publier, c'est passer en `PUBLISHED` à la date du jour : le
+ * statut `PUBLISHED` ne porte donc jamais de date future, et la planification
+ * se lit sur le seul statut `DRAFT`.
  */
 export function isScheduledPost(
   post: { status: string; publishedAt?: string | null },
   now: Date = new Date()
 ): boolean {
-  return post.status === "PUBLISHED" && isFutureServerDateTime(post.publishedAt, now);
+  return post.status === "DRAFT" && isFutureServerDateTime(post.publishedAt, now);
+}
+
+/**
+ * Ce qu'une liste doit dire de la mise en ligne d'un article, ou `null` quand
+ * il n'y a rien à en dire : un brouillon sans date, ou dont la date est passée
+ * sans qu'il ait été publié. Une seule source pour la carte, le tableau et la
+ * liste mobile, qui répondraient sinon chacune à leur façon.
+ */
+export function postPublicationInfo(
+  post: { status: string; publishedAt?: string | null },
+  now: Date = new Date()
+): { date: string; scheduled: boolean } | null {
+  if (!post.publishedAt) return null;
+  if (isScheduledPost(post, now)) return { date: post.publishedAt, scheduled: true };
+  if (post.status === "PUBLISHED") return { date: post.publishedAt, scheduled: false };
+  return null;
 }
 
 const DATE_FMT = new Intl.DateTimeFormat("fr-FR", {
@@ -99,6 +116,24 @@ const DATE_FMT = new Intl.DateTimeFormat("fr-FR", {
 export function formatDate(iso?: string): string {
   if (!iso) return "—";
   return DATE_FMT.format(parseApiDate(iso));
+}
+
+const DATE_TIME_FMT = new Intl.DateTimeFormat("fr-FR", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+/**
+ * Date **et heure**, pour tout ce qui touche à la mise en ligne : la
+ * planification se règle à la minute, l'afficher au jour près masquerait
+ * l'essentiel de ce que l'admin vient de choisir.
+ */
+export function formatDateTime(iso?: string): string {
+  if (!iso) return "—";
+  return DATE_TIME_FMT.format(parseApiDate(iso));
 }
 
 /** « il y a 3 jours », sans dépendance de locale supplémentaire. */

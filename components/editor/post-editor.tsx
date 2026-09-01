@@ -23,6 +23,7 @@ import { ApiError } from "@/lib/api/errors";
 import {
   cn,
   estimateReadingTime,
+  formatDateTime,
   fromDatetimeLocal,
   isFutureServerDateTime,
   isPastServerDateTime,
@@ -117,16 +118,15 @@ export function PostEditor({ post }: { post?: Post }) {
   const company = companies.find((c) => c.id === form.companyId) ?? null;
   const pending = createPost.isPending || updatePost.isPending;
 
-  // Plancher du champ de planification. Un article déjà mis en ligne conserve
-  // sa date d'origine, même passée : on ne ferme la porte qu'aux saisies neuves,
-  // sinon rouvrir un vieil article pour corriger une faute deviendrait
-  // impossible sans en changer la date de publication.
+  // Plancher du champ de planification. Une valeur déjà enregistrée, même
+  // passée, reste acceptée : on ne ferme la porte qu'aux saisies neuves, sinon
+  // rouvrir un vieil article pour corriger une faute deviendrait impossible
+  // sans toucher à sa date.
   const initialPublishedAt = toDatetimeLocal(post?.publishedAt);
-  const currentDatetimeLocal = nowDatetimeLocal();
   const publishedAtMin =
-    initialPublishedAt && initialPublishedAt < currentDatetimeLocal
+    initialPublishedAt && initialPublishedAt < nowDatetimeLocal()
       ? initialPublishedAt
-      : currentDatetimeLocal;
+      : nowDatetimeLocal();
   const readingTime = estimateReadingTime(form.content);
   const contentLength = form.content.length;
   const overLimit = contentLength > MAX_CONTENT_LENGTH;
@@ -139,7 +139,7 @@ export function PostEditor({ post }: { post?: Post }) {
     // L'attribut `min` du champ guide le sélecteur mais n'empêche pas une
     // saisie au clavier ni un collage : le refus se décide donc ici.
     if (
-      form.status === "PUBLISHED" &&
+      form.status === "DRAFT" &&
       form.publishedAt &&
       form.publishedAt !== initialPublishedAt &&
       isPastServerDateTime(form.publishedAt)
@@ -148,7 +148,7 @@ export function PostEditor({ post }: { post?: Post }) {
         publishedAt:
           "Cette date est déjà passée. Choisissez le moment présent ou une date à venir.",
       });
-      toast.error("La date de mise en ligne ne peut pas être dans le passé.");
+      toast.error("On ne peut pas planifier un article dans le passé.");
       return;
     }
 
@@ -159,11 +159,17 @@ export function PostEditor({ post }: { post?: Post }) {
       status: form.status,
       companyId: form.companyId ?? undefined,
       coverImageUrl: form.coverImageUrl,
-      // Une date de mise en ligne n'a de sens que sur un article publié.
+      // Publier, c'est mettre en ligne maintenant : le statut `PUBLISHED` part
+      // toujours avec la date du jour. Un article déjà en ligne garde en
+      // revanche sa date d'origine, sinon le rouvrir pour corriger une faute
+      // réécrirait sa date de parution. Une date à venir n'appartient donc
+      // qu'au brouillon, où elle vaut planification.
       publishedAt:
         form.status === "PUBLISHED"
-          ? fromDatetimeLocal(form.publishedAt)
-          : undefined,
+          ? post?.status === "PUBLISHED" && post.publishedAt
+            ? post.publishedAt
+            : fromDatetimeLocal(nowDatetimeLocal())
+          : fromDatetimeLocal(form.publishedAt),
     });
 
     if (!parsed.success) {
@@ -295,11 +301,11 @@ export function PostEditor({ post }: { post?: Post }) {
         </Select>
       </Field>
 
-      {form.status === "PUBLISHED" ? (
+      {form.status === "DRAFT" ? (
         <Field
-          label="Date de mise en ligne"
+          label="Planifier la mise en ligne"
           htmlFor={`${idPrefix}-published-at`}
-          hint={form.publishedAt ? undefined : "auto"}
+          hint={form.publishedAt ? undefined : "facultatif"}
           error={errors.publishedAt}
         >
           <div className="flex gap-2">
@@ -315,7 +321,7 @@ export function PostEditor({ post }: { post?: Post }) {
                 variant="outline"
                 size="icon"
                 onClick={() => set("publishedAt", "")}
-                aria-label="Effacer la date de mise en ligne"
+                aria-label="Effacer la date de planification"
               >
                 <X />
               </Button>
@@ -327,12 +333,12 @@ export function PostEditor({ post }: { post?: Post }) {
       <div className="rounded-lg bg-surface-2 px-3 py-2.5">
         <p className="text-xs leading-relaxed text-muted">
           {form.status === "PUBLISHED"
-            ? form.publishedAt
-              ? isFutureServerDateTime(form.publishedAt)
-                ? "L'article est planifié : il ne paraîtra qu'à la date choisie ci-dessus."
-                : "L'article portera la date de mise en ligne choisie ci-dessus."
-              : "Laissée vide, la date de mise en ligne est fixée par le serveur."
-            : "Le brouillon n'est visible que dans ce dashboard."}
+            ? post?.status === "PUBLISHED" && post.publishedAt
+              ? `En ligne depuis le ${formatDateTime(post.publishedAt)}. Enregistrer ne change pas cette date.`
+              : "L'article part en ligne maintenant, à la date du jour."
+            : form.publishedAt && isFutureServerDateTime(form.publishedAt)
+              ? "Planifié : l'article reste un brouillon jusqu'à la date choisie ci-dessus."
+              : "Le brouillon n'est visible que dans ce dashboard. Donnez-lui une date pour le planifier."}
         </p>
       </div>
 
