@@ -36,6 +36,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PostStatusBadge } from "@/components/ui/badge";
+import { PostThumb } from "@/components/posts/post-thumb";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -342,7 +343,7 @@ export default function PostsPage() {
             <div className="hidden md:block overflow-x-auto scrollbar-thin">
               <table
                 className="w-full border-collapse text-sm"
-                style={{ minWidth: 880 }}
+                style={{ minWidth: 920 }}
               >
                 <thead>
                   <tr className="border-b border-border">
@@ -374,12 +375,17 @@ export default function PostsPage() {
                       className="cursor-pointer border-b border-border transition-colors last:border-0 hover:bg-surface-2"
                     >
                       <td className="w-full max-w-0 px-4 py-3 align-middle">
-                        <p className="truncate font-medium text-text">
-                          {post.title}
-                        </p>
-                        <p className="truncate text-xs text-muted">
-                          {post.excerpt || post.slug}
-                        </p>
+                        <div className="flex min-w-0 items-center gap-3">
+                          <PostThumb post={post} className="size-9" />
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-text">
+                              {post.title}
+                            </p>
+                            <p className="truncate text-xs text-muted">
+                              {post.excerpt || post.slug}
+                            </p>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-3 py-3 align-middle">
                         <PostStatusBadge
@@ -424,46 +430,49 @@ export default function PostsPage() {
                 <li key={post.id}>
                   <Link
                     href={`/posts/${post.id}/edit`}
-                    className="block space-y-1.5 px-4 py-3.5 transition-colors hover:bg-surface-2"
+                    className="flex gap-3 px-4 py-3.5 transition-colors hover:bg-surface-2"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="min-w-0 flex-1 text-sm font-medium leading-snug">
-                        {post.title}
-                      </p>
-                      <PostStatusBadge
-                        status={post.status}
-                        scheduled={isScheduledPost(post)}
-                      />
-                    </div>
-                    {post.excerpt ? (
-                      <p className="line-clamp-2 text-xs leading-relaxed text-muted">
-                        {post.excerpt}
-                      </p>
-                    ) : null}
-                    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] text-muted">
-                      <span className="inline-flex items-center gap-1.5">
-                        <CompanyLogo
-                          company={post.company}
-                          className="size-5 rounded-md text-[9px]"
+                    <PostThumb post={post} className="mt-0.5 size-11" />
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="min-w-0 flex-1 text-sm font-medium leading-snug">
+                          {post.title}
+                        </p>
+                        <PostStatusBadge
+                          status={post.status}
+                          scheduled={isScheduledPost(post)}
                         />
-                        {post.company?.name ?? "—"}
-                      </span>
-                      <span aria-hidden>·</span>
-                      <span>Créé {formatRelative(post.createdAt)}</span>
-                      {post.publishedAt ? (
-                        <>
-                          <span aria-hidden>·</span>
-                          <span
-                            className={
-                              isScheduledPost(post) ? "text-info" : undefined
-                            }
-                          >
-                            {isScheduledPost(post) ? "Planifié" : "Publié"} le{" "}
-                            {formatDate(post.publishedAt)}
-                          </span>
-                        </>
+                      </div>
+                      {post.excerpt ? (
+                        <p className="line-clamp-2 text-xs leading-relaxed text-muted">
+                          {post.excerpt}
+                        </p>
                       ) : null}
-                    </p>
+                      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] text-muted">
+                        <span className="inline-flex items-center gap-1.5">
+                          <CompanyLogo
+                            company={post.company}
+                            className="size-5 rounded-md text-[9px]"
+                          />
+                          {post.company?.name ?? "—"}
+                        </span>
+                        <span aria-hidden>·</span>
+                        <span>Créé {formatRelative(post.createdAt)}</span>
+                        {post.publishedAt ? (
+                          <>
+                            <span aria-hidden>·</span>
+                            <span
+                              className={
+                                isScheduledPost(post) ? "text-info" : undefined
+                              }
+                            >
+                              {isScheduledPost(post) ? "Planifié" : "Publié"} le{" "}
+                              {formatDate(post.publishedAt)}
+                            </span>
+                          </>
+                        ) : null}
+                      </p>
+                    </div>
                   </Link>
                 </li>
               ))}
