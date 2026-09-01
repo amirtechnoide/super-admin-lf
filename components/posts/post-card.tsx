@@ -25,7 +25,7 @@ function CardMedia({ post, accent }: { post: Post; accent: string }) {
   const hasImage = Boolean(post.coverImageUrl) && !failed;
 
   return (
-    <div className="relative aspect-[16/9] shrink-0 overflow-hidden">
+    <div className="relative aspect-square shrink-0 overflow-hidden bg-surface-2">
       {hasImage ? (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element -- domaine de stockage non déclaré */}
@@ -34,7 +34,7 @@ function CardMedia({ post, accent }: { post: Post; accent: string }) {
             alt=""
             loading="lazy"
             onError={() => setFailed(true)}
-            className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="size-full object-contain p-4 transition-transform duration-500 group-hover:scale-[1.03]"
           />
           <span
             aria-hidden
@@ -196,7 +196,7 @@ export function PostCard({
 export function PostCardSkeleton() {
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-surface">
-      <div className="skeleton aspect-[16/9] w-full" />
+      <div className="skeleton aspect-square w-full" />
       <div className="p-4">
         <div className="mb-3 flex items-center justify-between gap-2">
           <div className="skeleton h-3 w-20 rounded-md" />

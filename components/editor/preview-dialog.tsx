@@ -26,7 +26,7 @@ function CoverImage({ src }: { src: string }) {
 
   if (failed) {
     return (
-      <div className="mb-6 flex aspect-[16/7] w-full flex-col items-center justify-center gap-2 rounded-xl border border-border bg-surface-2 text-muted">
+      <div className="mx-auto mb-6 flex aspect-square w-full max-w-xs flex-col items-center justify-center gap-2 rounded-xl border border-border bg-surface-2 text-muted">
         <ImageOff className="size-5" />
         <span className="px-4 text-center font-mono text-[11px] break-all">
           {src}
@@ -41,7 +41,7 @@ function CoverImage({ src }: { src: string }) {
       src={src}
       alt=""
       onError={() => setFailed(true)}
-      className="mb-6 aspect-[16/7] w-full rounded-xl border border-border bg-surface-2 object-cover"
+      className="mx-auto mb-6 aspect-square w-full max-w-xs rounded-xl border border-border bg-surface-2 object-contain p-4"
     />
   );
 }

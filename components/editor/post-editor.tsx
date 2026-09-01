@@ -393,12 +393,20 @@ export function PostEditor({ post }: { post?: Post }) {
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="flex aspect-[16/9] w-full flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-border-strong bg-surface-2 text-muted transition-colors hover:border-accent hover:text-text"
+          className="flex aspect-square w-full flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-border-strong bg-surface-2 text-muted transition-colors hover:border-accent hover:text-text"
         >
           <ImagePlus className="size-5" />
           <span className="text-[13px]">Choisir une image</span>
+          <span className="text-[11px] text-muted">Format carré conseillé</span>
         </button>
       )}
+
+      {/* Les sites affichent la couverture dans un cadre carré, sans rognage. */}
+      <p className="text-[12px] leading-relaxed text-muted">
+        Format conseillé : <strong className="font-medium text-text">carré (1:1)</strong>,
+        par exemple 1200 × 1200 px. Une image d&apos;un autre format reste affichée
+        en entier, avec des marges de chaque côté.
+      </p>
 
       <input
         ref={fileInputRef}

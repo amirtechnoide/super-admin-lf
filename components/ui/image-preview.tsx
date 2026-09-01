@@ -15,15 +15,15 @@ export function ImagePreview({
   file,
   url,
   onRemove,
-  aspect = "aspect-[16/9]",
-  fit = "cover",
+  aspect = "aspect-square",
+  fit = "contain",
   className,
 }: {
   file?: File | null;
   url?: string | null;
   onRemove?: () => void;
   aspect?: string;
-  /** `cover` pour une photo qui remplit le cadre, `contain` pour un logo. */
+  /** `contain` affiche l'image entière, `cover` remplit le cadre en rognant. */
   fit?: "cover" | "contain";
   className?: string;
 }) {

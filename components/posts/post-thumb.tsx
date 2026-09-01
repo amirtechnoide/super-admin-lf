@@ -33,7 +33,7 @@ export function PostThumb({
         loading="lazy"
         onError={() => setFailed(true)}
         className={cn(
-          "size-10 shrink-0 rounded-lg border border-border bg-surface-2 object-cover",
+          "size-10 shrink-0 rounded-lg border border-border bg-surface-2 object-contain p-0.5",
           className
         )}
       />
