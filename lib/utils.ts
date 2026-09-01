@@ -15,6 +15,8 @@ export function cn(...inputs: ClassValue[]) {
  * décalage explicite) : la fonction le détecte déjà et le respecte.
  */
 const SERVER_UTC_OFFSET = "+01:00"; // Africa/Douala, sans changement d'heure
+/** Le même décalage en minutes. À garder aligné sur la constante ci-dessus. */
+const SERVER_UTC_OFFSET_MINUTES = 60;
 
 export function parseApiDate(value: string): Date {
   const hasTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/.test(value);
@@ -35,6 +37,57 @@ export function toDatetimeLocal(serverDateTime?: string | null): string {
 export function fromDatetimeLocal(value: string): string | undefined {
   if (!value) return undefined;
   return value.length === 16 ? `${value}:00` : value;
+}
+
+/**
+ * L'instant présent sur l'horloge du serveur, au format d'un
+ * `<input type="datetime-local">`. C'est cette référence, et non l'heure du
+ * navigateur, qui borne la planification : la valeur saisie est stockée telle
+ * quelle par le backend, donc un admin hors du Cameroun comparerait sinon à une
+ * heure décalée.
+ */
+export function nowDatetimeLocal(now: Date = new Date()): string {
+  const atServerClock = new Date(
+    now.getTime() + SERVER_UTC_OFFSET_MINUTES * 60_000
+  );
+  return atServerClock.toISOString().slice(0, 16);
+}
+
+/*
+ * Les horodatages serveur partagent la disposition `AAAA-MM-JJTHH:mm`, avec des
+ * champs à largeur fixe : l'ordre alphabétique y coïncide avec l'ordre
+ * chronologique. Une comparaison de chaînes suffit donc, et évite un aller-
+ * retour par `Date` qui réintroduirait la question du fuseau.
+ */
+
+/** Vrai si l'horodatage est strictement à venir. */
+export function isFutureServerDateTime(
+  value?: string | null,
+  now: Date = new Date()
+): boolean {
+  if (!value) return false;
+  return value > nowDatetimeLocal(now);
+}
+
+/** Vrai si l'horodatage est strictement passé. L'instant présent est accepté. */
+export function isPastServerDateTime(
+  value?: string | null,
+  now: Date = new Date()
+): boolean {
+  if (!value) return false;
+  return value < nowDatetimeLocal(now);
+}
+
+/**
+ * Un article planifié est publié, mais sa date de mise en ligne n'est pas
+ * encore atteinte : il n'est donc pas visible sur le blog. L'API n'ayant que
+ * deux statuts, cet état se déduit de la date.
+ */
+export function isScheduledPost(
+  post: { status: string; publishedAt?: string | null },
+  now: Date = new Date()
+): boolean {
+  return post.status === "PUBLISHED" && isFutureServerDateTime(post.publishedAt, now);
 }
 
 const DATE_FMT = new Intl.DateTimeFormat("fr-FR", {

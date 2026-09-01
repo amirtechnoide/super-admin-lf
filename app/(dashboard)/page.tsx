@@ -15,7 +15,7 @@ import {
 import { useStats } from "@/lib/queries/use-stats";
 import { usePosts } from "@/lib/queries/use-posts";
 import { useAppStore } from "@/lib/store/app-store";
-import { formatNumber, formatRelative } from "@/lib/utils";
+import { formatNumber, formatRelative, isScheduledPost } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PostStatusBadge } from "@/components/ui/badge";
@@ -223,7 +223,10 @@ export default function OverviewPage() {
                   </div>
 
                   <div className="flex shrink-0 items-center gap-2">
-                    <PostStatusBadge status={post.status} />
+                    <PostStatusBadge
+                      status={post.status}
+                      scheduled={isScheduledPost(post)}
+                    />
                     <ChevronRight className="size-4 text-muted opacity-0 transition-opacity group-hover:opacity-100" />
                   </div>
                 </Link>

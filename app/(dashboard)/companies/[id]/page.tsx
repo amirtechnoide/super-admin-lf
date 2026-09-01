@@ -12,7 +12,7 @@ import { useStats } from "@/lib/queries/use-stats";
 import { useAppStore } from "@/lib/store/app-store";
 import { ApiError } from "@/lib/api/errors";
 import { accentForCompany, hasBrandAccent } from "@/lib/theme/company-accent";
-import { formatDate, formatNumber } from "@/lib/utils";
+import { formatDate, formatNumber, isScheduledPost } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PostStatusBadge } from "@/components/ui/badge";
@@ -262,7 +262,10 @@ export default function CompanyDetailPage({
                       {formatDate(post.createdAt)}
                     </p>
                   </div>
-                  <PostStatusBadge status={post.status} />
+                  <PostStatusBadge
+                      status={post.status}
+                      scheduled={isScheduledPost(post)}
+                    />
                 </Link>
               </li>
             ))}

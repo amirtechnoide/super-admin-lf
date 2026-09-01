@@ -24,6 +24,9 @@ import {
   cn,
   estimateReadingTime,
   fromDatetimeLocal,
+  isFutureServerDateTime,
+  isPastServerDateTime,
+  nowDatetimeLocal,
   toDatetimeLocal,
 } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -113,6 +116,17 @@ export function PostEditor({ post }: { post?: Post }) {
 
   const company = companies.find((c) => c.id === form.companyId) ?? null;
   const pending = createPost.isPending || updatePost.isPending;
+
+  // Plancher du champ de planification. Un article déjà mis en ligne conserve
+  // sa date d'origine, même passée : on ne ferme la porte qu'aux saisies neuves,
+  // sinon rouvrir un vieil article pour corriger une faute deviendrait
+  // impossible sans en changer la date de publication.
+  const initialPublishedAt = toDatetimeLocal(post?.publishedAt);
+  const currentDatetimeLocal = nowDatetimeLocal();
+  const publishedAtMin =
+    initialPublishedAt && initialPublishedAt < currentDatetimeLocal
+      ? initialPublishedAt
+      : currentDatetimeLocal;
   const readingTime = estimateReadingTime(form.content);
   const contentLength = form.content.length;
   const overLimit = contentLength > MAX_CONTENT_LENGTH;
@@ -122,6 +136,22 @@ export function PostEditor({ post }: { post?: Post }) {
   }
 
   async function save() {
+    // L'attribut `min` du champ guide le sélecteur mais n'empêche pas une
+    // saisie au clavier ni un collage : le refus se décide donc ici.
+    if (
+      form.status === "PUBLISHED" &&
+      form.publishedAt &&
+      form.publishedAt !== initialPublishedAt &&
+      isPastServerDateTime(form.publishedAt)
+    ) {
+      setErrors({
+        publishedAt:
+          "Cette date est déjà passée. Choisissez le moment présent ou une date à venir.",
+      });
+      toast.error("La date de mise en ligne ne peut pas être dans le passé.");
+      return;
+    }
+
     const parsed = postFormSchema.safeParse({
       title: form.title,
       content: form.content,
@@ -276,6 +306,7 @@ export function PostEditor({ post }: { post?: Post }) {
             <Input
               id={`${idPrefix}-published-at`}
               type="datetime-local"
+              min={publishedAtMin}
               value={form.publishedAt}
               onChange={(event) => set("publishedAt", event.target.value)}
             />
@@ -297,7 +328,9 @@ export function PostEditor({ post }: { post?: Post }) {
         <p className="text-xs leading-relaxed text-muted">
           {form.status === "PUBLISHED"
             ? form.publishedAt
-              ? "L'article portera la date de mise en ligne choisie ci-dessus."
+              ? isFutureServerDateTime(form.publishedAt)
+                ? "L'article est planifié : il ne paraîtra qu'à la date choisie ci-dessus."
+                : "L'article portera la date de mise en ligne choisie ci-dessus."
               : "Laissée vide, la date de mise en ligne est fixée par le serveur."
             : "Le brouillon n'est visible que dans ce dashboard."}
         </p>

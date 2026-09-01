@@ -26,7 +26,12 @@ import {
   type PostStatus,
 } from "@/lib/api/schemas";
 import { ApiError } from "@/lib/api/errors";
-import { cn, formatDate, formatRelative } from "@/lib/utils";
+import {
+  cn,
+  formatDate,
+  formatRelative,
+  isScheduledPost,
+} from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -337,7 +342,7 @@ export default function PostsPage() {
             <div className="hidden md:block overflow-x-auto scrollbar-thin">
               <table
                 className="w-full border-collapse text-sm"
-                style={{ minWidth: 760 }}
+                style={{ minWidth: 880 }}
               >
                 <thead>
                   <tr className="border-b border-border">
@@ -352,6 +357,9 @@ export default function PostsPage() {
                     </th>
                     <th className="px-3 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-muted">
                       Créé le
+                    </th>
+                    <th className="px-3 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-muted">
+                      Publication
                     </th>
                     <th className="px-3 py-2.5 text-right">
                       <span className="sr-only">Actions</span>
@@ -374,7 +382,10 @@ export default function PostsPage() {
                         </p>
                       </td>
                       <td className="px-3 py-3 align-middle">
-                        <PostStatusBadge status={post.status} />
+                        <PostStatusBadge
+                          status={post.status}
+                          scheduled={isScheduledPost(post)}
+                        />
                       </td>
                       <td className="px-3 py-3 align-middle">
                         <span className="flex items-center gap-2 whitespace-nowrap text-[13px] text-muted">
@@ -387,6 +398,14 @@ export default function PostsPage() {
                       </td>
                       <td className="whitespace-nowrap px-3 py-3 align-middle font-mono text-xs text-muted">
                         {formatDate(post.createdAt)}
+                      </td>
+                      <td
+                        className={cn(
+                          "whitespace-nowrap px-3 py-3 align-middle font-mono text-xs",
+                          isScheduledPost(post) ? "text-info" : "text-muted"
+                        )}
+                      >
+                        {post.publishedAt ? formatDate(post.publishedAt) : "—"}
                       </td>
                       <td
                         className="px-3 py-3 text-right align-middle"
@@ -411,7 +430,10 @@ export default function PostsPage() {
                       <p className="min-w-0 flex-1 text-sm font-medium leading-snug">
                         {post.title}
                       </p>
-                      <PostStatusBadge status={post.status} />
+                      <PostStatusBadge
+                        status={post.status}
+                        scheduled={isScheduledPost(post)}
+                      />
                     </div>
                     {post.excerpt ? (
                       <p className="line-clamp-2 text-xs leading-relaxed text-muted">
@@ -427,7 +449,20 @@ export default function PostsPage() {
                         {post.company?.name ?? "—"}
                       </span>
                       <span aria-hidden>·</span>
-                      <span>{formatRelative(post.createdAt)}</span>
+                      <span>Créé {formatRelative(post.createdAt)}</span>
+                      {post.publishedAt ? (
+                        <>
+                          <span aria-hidden>·</span>
+                          <span
+                            className={
+                              isScheduledPost(post) ? "text-info" : undefined
+                            }
+                          >
+                            {isScheduledPost(post) ? "Planifié" : "Publié"} le{" "}
+                            {formatDate(post.publishedAt)}
+                          </span>
+                        </>
+                      ) : null}
                     </p>
                   </Link>
                 </li>

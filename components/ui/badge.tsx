@@ -1,4 +1,5 @@
 import * as React from "react";
+import { CalendarClock } from "lucide-react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 import { POST_STATUS_LABELS, type PostStatus } from "@/lib/api/schemas";
@@ -34,14 +35,30 @@ export function Badge({ className, tone, ...props }: BadgeProps) {
  * Badge de statut d'article, l'API n'expose que DRAFT et PUBLISHED.
  * Le vert dit « en ligne », l'ambre « pas encore » : la couleur porte
  * l'information, indépendamment de l'accent de l'entreprise.
+ *
+ * Un article planifié est publié au sens de l'API, mais sa date de mise en
+ * ligne n'est pas encore atteinte. Le dire « Publié » serait faux : il reçoit
+ * donc son propre badge, en bleu, pour ne pas se confondre avec ce qui est
+ * réellement en ligne.
  */
 export function PostStatusBadge({
   status,
+  scheduled = false,
   className,
 }: {
   status: PostStatus;
+  scheduled?: boolean;
   className?: string;
 }) {
+  if (scheduled) {
+    return (
+      <Badge tone="info" className={className}>
+        <CalendarClock className="size-3" aria-hidden />
+        Planifié
+      </Badge>
+    );
+  }
+
   const published = status === "PUBLISHED";
   return (
     <Badge tone={published ? "success" : "warning"} className={className}>

@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUpRight, CalendarDays, Clock } from "lucide-react";
+import { ArrowUpRight, CalendarClock, CalendarDays, Clock } from "lucide-react";
 import type { Post } from "@/lib/api/schemas";
 import { accentForCompany } from "@/lib/theme/company-accent";
-import { cn, estimateReadingTime, formatDate } from "@/lib/utils";
+import { cn, estimateReadingTime, formatDate, isScheduledPost } from "@/lib/utils";
 import { PostStatusBadge } from "@/components/ui/badge";
 import { CompanyLogo } from "@/components/layout/company-switcher";
 
@@ -86,6 +86,7 @@ export function PostCard({
 }) {
   const accent = accentForCompany(post.company);
   const readingTime = estimateReadingTime(post.content);
+  const scheduled = isScheduledPost(post);
 
   return (
     <article
@@ -115,7 +116,11 @@ export function PostCard({
           ) : (
             <span className="font-mono text-[10px] text-muted">#{post.id}</span>
           )}
-          <PostStatusBadge status={post.status} className="shrink-0" />
+          <PostStatusBadge
+            status={post.status}
+            scheduled={scheduled}
+            className="shrink-0"
+          />
         </div>
 
         {/* Le lien couvre la carte : toute la surface est cliquable. */}
@@ -140,10 +145,28 @@ export function PostCard({
           </p>
         )}
 
+        {/* La date de mise en ligne ne vaut d'être montrée que si elle existe :
+            un brouillon n'en a pas, et un article planifié doit annoncer la
+            sienne sans se faire passer pour déjà paru. */}
+        {post.publishedAt ? (
+          <p
+            className={cn(
+              "mt-2.5 inline-flex items-center gap-1.5 font-mono text-[11px]",
+              scheduled ? "text-info" : "text-muted"
+            )}
+          >
+            <CalendarClock className="size-3 shrink-0" aria-hidden />
+            <span className="truncate">
+              {scheduled ? "Planifié pour le" : "Publié le"}{" "}
+              {formatDate(post.publishedAt)}
+            </span>
+          </p>
+        ) : null}
+
         <div className="mt-auto flex items-center justify-between gap-3 border-t border-border pt-3 font-mono text-[11px] text-muted">
-          <span className="inline-flex items-center gap-1.5">
-            <CalendarDays className="size-3" />
-            {formatDate(post.createdAt)}
+          <span className="inline-flex min-w-0 items-center gap-1.5">
+            <CalendarDays className="size-3 shrink-0" aria-hidden />
+            <span className="truncate">Créé le {formatDate(post.createdAt)}</span>
           </span>
           <span className="inline-flex items-center gap-1.5">
             <Clock className="size-3" />
@@ -174,6 +197,7 @@ export function PostCardSkeleton() {
         <div className="skeleton h-4 w-[85%] rounded-md" />
         <div className="skeleton mt-2 h-3 w-full rounded-md" />
         <div className="skeleton mt-1.5 h-3 w-[55%] rounded-md" />
+        <div className="skeleton mt-2.5 h-3 w-32 rounded-md" />
         <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
           <div className="skeleton h-3 w-24 rounded-md" />
           <div className="skeleton h-3 w-12 rounded-md" />
