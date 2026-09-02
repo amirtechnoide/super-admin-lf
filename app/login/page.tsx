@@ -55,10 +55,6 @@ export default function LoginPage() {
         <div className="w-full max-w-[420px]">
           <div className="animate-rise mb-8 text-center">
             <LogoMark size={54} className="mx-auto" />
-
-            <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.28em] text-muted">
-              Studio Blog
-            </p>
             <h1 className="mt-2.5 font-display text-[28px] font-semibold leading-tight tracking-tight">
               Content de vous revoir
             </h1>
