@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
-import { cn, initials } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { LogoMark } from "@/components/brand/logo";
 
 export const Avatar = React.forwardRef<
   React.ComponentRef<typeof AvatarPrimitive.Root>,
@@ -36,20 +37,29 @@ export const AvatarFallback = React.forwardRef<
 ));
 AvatarFallback.displayName = "AvatarFallback";
 
-/** Avatar d'utilisateur avec repli sur les initiales. */
+/**
+ * Avatar d'utilisateur.
+ *
+ * L'API n'expose aucune photo : plutôt que des initiales, on affiche la marque
+ * LF COMPANY. Un seul compte se connecte à ce dashboard, il n'y a donc personne
+ * à distinguer, et le logo tient mieux la pastille qu'une lettre isolée.
+ */
 export function UserAvatar({
   name,
   src,
   className,
 }: {
+  /** Conservé pour le texte alternatif, plus pour des initiales. */
   name: string;
   src?: string;
   className?: string;
 }) {
   return (
-    <Avatar className={className}>
+    <Avatar className={cn("bg-surface", className)} title={name}>
       {src ? <AvatarImage src={src} alt="" /> : null}
-      <AvatarFallback>{initials(name)}</AvatarFallback>
+      <AvatarFallback className="p-[18%]">
+        <LogoMark size={48} className="size-full object-contain" />
+      </AvatarFallback>
     </Avatar>
   );
 }

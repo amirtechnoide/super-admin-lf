@@ -1,4 +1,4 @@
-# Sogafric Blog — dashboard multi-tenant
+# Studio Blog LF COMPANY — dashboard multi-tenant
 
 Interface d'administration des blogs de plusieurs entreprises, branchée sur
 l'API Spring documentée dans `/v3/api-docs`.

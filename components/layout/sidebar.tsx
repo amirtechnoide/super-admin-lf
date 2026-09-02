@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useActiveCompany } from "./company-switcher";
 import { isActivePath, NAV_SECTIONS } from "./nav-items";
 import { Button } from "@/components/ui/button";
+import { Wordmark as BrandWordmark } from "@/components/brand/logo";
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -82,17 +83,9 @@ function SidebarFooter() {
 
 function Wordmark() {
   return (
-    <div className="flex h-14 shrink-0 items-center gap-2.5 px-4">
-      {/* Chrome neutre : un repère produit, pas un logo client. */}
-      <span
-        aria-hidden
-        className="flex size-6 items-center justify-center rounded-md bg-text text-[10px] font-semibold text-bg"
-      >
-        SG
-      </span>
-      <span className="font-display text-[13px] font-semibold tracking-tight">
-        Sogafric Blog
-      </span>
+    <div className="flex h-14 shrink-0 items-center px-4">
+      {/* Chrome neutre : la marque de l'éditeur, pas un logo client. */}
+      <BrandWordmark size={22} />
     </div>
   );
 }

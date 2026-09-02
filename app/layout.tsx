@@ -22,9 +22,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Studio Blog, Dashboard",
+  title: "Studio Blog, LF COMPANY",
   description:
-    "Dashboard pour gérer les actualités des sites clients depuis une interface unique.",
+    "Dashboard LF COMPANY pour gérer les actualités des sites clients depuis une interface unique.",
+  // favicon.ico, icon.png et apple-icon.png sont pris automatiquement dans
+  // app/ ; on ajoute ici les tailles Android, utilisées à l'ajout à l'écran
+  // d'accueil.
+  icons: {
+    other: [
+      { rel: "icon", url: "/android-chrome-192x192.png", sizes: "192x192" },
+      { rel: "icon", url: "/android-chrome-512x512.png", sizes: "512x512" },
+    ],
+  },
 };
 
 export const viewport: Viewport = {

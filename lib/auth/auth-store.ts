@@ -2,8 +2,8 @@
 
 import { create } from "zustand";
 
-const TOKEN_KEY = "sogafric.token";
-const REFRESH_KEY = "sogafric.refreshToken";
+const TOKEN_KEY = "lfcompany.token";
+const REFRESH_KEY = "lfcompany.refreshToken";
 
 /** Lit le champ `sub` du JWT, le backend y place l'e-mail de l'admin. */
 function readEmailFromToken(token: string | null): string | null {

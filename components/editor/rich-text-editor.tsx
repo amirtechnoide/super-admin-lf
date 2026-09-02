@@ -5,7 +5,12 @@ import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import { StarterKit } from "@tiptap/starter-kit";
 import { Image as TiptapImage } from "@tiptap/extension-image";
 import { Placeholder } from "@tiptap/extension-placeholder";
+import { TextAlign } from "@tiptap/extension-text-align";
 import {
+  AlignCenter,
+  AlignJustify,
+  AlignLeft,
+  AlignRight,
   Bold,
   Code,
   Heading2,
@@ -221,6 +226,7 @@ export function RichTextEditor({
           HTMLAttributes: { rel: "noopener noreferrer", target: "_blank" },
         },
       }),
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
       TiptapImage.configure({ HTMLAttributes: { loading: "lazy" } }),
       Placeholder.configure({
         placeholder: "Rédigez votre article…",
@@ -314,6 +320,37 @@ export function RichTextEditor({
           }
         >
           <Heading3 />
+        </ToolbarButton>
+
+        <Divider />
+
+        <ToolbarButton
+          label="Aligner à gauche"
+          active={editor.isActive({ textAlign: "left" })}
+          onClick={() => editor.chain().focus().setTextAlign("left").run()}
+        >
+          <AlignLeft />
+        </ToolbarButton>
+        <ToolbarButton
+          label="Centrer"
+          active={editor.isActive({ textAlign: "center" })}
+          onClick={() => editor.chain().focus().setTextAlign("center").run()}
+        >
+          <AlignCenter />
+        </ToolbarButton>
+        <ToolbarButton
+          label="Aligner à droite"
+          active={editor.isActive({ textAlign: "right" })}
+          onClick={() => editor.chain().focus().setTextAlign("right").run()}
+        >
+          <AlignRight />
+        </ToolbarButton>
+        <ToolbarButton
+          label="Justifier"
+          active={editor.isActive({ textAlign: "justify" })}
+          onClick={() => editor.chain().focus().setTextAlign("justify").run()}
+        >
+          <AlignJustify />
         </ToolbarButton>
 
         <Divider />

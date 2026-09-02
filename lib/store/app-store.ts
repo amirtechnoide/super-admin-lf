@@ -23,7 +23,7 @@ export const useAppStore = create<AppState>()(
       setPostsView: (postsView) => set({ postsView }),
     }),
     {
-      name: "sogafric.preferences",
+      name: "lfcompany.preferences",
       // La réhydratation est déclenchée après le montage (voir Providers) :
       // sinon le premier rendu client différerait du HTML serveur.
       skipHydration: true,

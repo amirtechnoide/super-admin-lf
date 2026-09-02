@@ -283,6 +283,21 @@
   font-size: 0.95rem;
   line-height: 1.75;
 }
+/* Même justification que sur les sites publics : l'aperçu doit montrer ce que
+   verra le visiteur. Un alignement choisi dans l'éditeur passe en style inline
+   et l'emporte donc sur cette règle. */
+.article-render p,
+.article-render li {
+  text-align: justify;
+  hyphens: auto;
+}
+.article-render h1,
+.article-render h2,
+.article-render h3,
+.article-render blockquote {
+  text-align: left;
+}
+
 .article-render > * + * {
   margin-top: 0.9em;
 }
